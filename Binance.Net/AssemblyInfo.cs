@@ -1,1 +1,3 @@
-﻿[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Binance.Net.UnitTests")]
+﻿using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("Binance.Net.UnitTests")]

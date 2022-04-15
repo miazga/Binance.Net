@@ -6,26 +6,26 @@
     <members>
         <member name="T:Binance.Net.BinanceHelpers">
             <summary>
-            Helper methods for the Binance API
+                Helper methods for the Binance API
             </summary>
         </member>
         <member name="M:Binance.Net.BinanceHelpers.UsedWeight(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.Collections.Generic.IEnumerable{System.String}}})">
             <summary>
-            Get the used weight from the response headers
+                Get the used weight from the response headers
             </summary>
             <param name="headers"></param>
             <returns></returns>
         </member>
         <member name="M:Binance.Net.BinanceHelpers.UsedOrderCount(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.Collections.Generic.IEnumerable{System.String}}})">
             <summary>
-            Get the used weight from the response headers
+                Get the used weight from the response headers
             </summary>
             <param name="headers"></param>
             <returns></returns>
         </member>
         <member name="M:Binance.Net.BinanceHelpers.ClampQuantity(System.Decimal,System.Decimal,System.Decimal,System.Decimal)">
             <summary>
-            Clamp a quantity between a min and max quantity and floor to the closest step
+                Clamp a quantity between a min and max quantity and floor to the closest step
             </summary>
             <param name="minQuantity"></param>
             <param name="maxQuantity"></param>
@@ -35,7 +35,7 @@
         </member>
         <member name="M:Binance.Net.BinanceHelpers.ClampPrice(System.Decimal,System.Decimal,System.Decimal)">
             <summary>
-            Clamp a price between a min and max price
+                Clamp a price between a min and max price
             </summary>
             <param name="minPrice"></param>
             <param name="maxPrice"></param>
@@ -44,7 +44,7 @@
         </member>
         <member name="M:Binance.Net.BinanceHelpers.FloorPrice(System.Decimal,System.Decimal)">
             <summary>
-            Floor a price to the closest tick
+                Floor a price to the closest tick
             </summary>
             <param name="tickSize"></param>
             <param name="price"></param>
@@ -52,28 +52,40 @@
         </member>
         <member name="M:Binance.Net.BinanceHelpers.Floor(System.Decimal)">
             <summary>
-            Floor
+                Floor
             </summary>
             <param name="number"></param>
             <returns></returns>
         </member>
         <member name="M:Binance.Net.BinanceHelpers.AddBinance(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Binance.Net.Objects.BinanceClientOptions,Binance.Net.Objects.BinanceSocketClientOptions},System.Nullable{Microsoft.Extensions.DependencyInjection.ServiceLifetime})">
             <summary>
-            Add the IBinanceClient and IBinanceSocketClient to the sevice collection so they can be injected
+                Add the IBinanceClient and IBinanceSocketClient to the sevice collection so they can be injected
             </summary>
             <param name="services">The service collection</param>
             <param name="defaultOptionsCallback">Set default options for the client</param>
-            <param name="socketClientLifeTime">The lifetime of the IBinanceSocketClient for the service collection. Defaults to Scoped.</param>
+            <param name="socketClientLifeTime">
+                The lifetime of the IBinanceSocketClient for the service collection. Defaults to
+                Scoped.
+            </param>
             <returns></returns>
         </member>
         <member name="M:Binance.Net.BinanceHelpers.ValidateBinanceSymbol(System.String)">
             <summary>
-            Validate the string is a valid Binance symbol.
+                Validate the string is a valid Binance symbol.
             </summary>
             <param name="symbolString">string to validate</param>
         </member>
         <member name="T:Binance.Net.Clients.BinanceClient">
             <inheritdoc cref="T:Binance.Net.Interfaces.Clients.IBinanceClient" />
+        </member>
+        <member name="M:Binance.Net.Clients.BinanceClient.SetDefaultOptions(Binance.Net.Objects.BinanceClientOptions)">
+            <summary>
+                Set the default options to be used when creating new clients
+            </summary>
+            <param name="options">Options to use as default</param>
+        </member>
+        <member name="M:Binance.Net.Clients.BinanceClient.ParseErrorResponse(Newtonsoft.Json.Linq.JToken)">
+            <inheritdoc />
         </member>
         <member name="P:Binance.Net.Clients.BinanceClient.GeneralApi">
             <inheritdoc />
@@ -89,23 +101,14 @@
         </member>
         <member name="M:Binance.Net.Clients.BinanceClient.#ctor">
             <summary>
-            Create a new instance of BinanceClient using the default options
+                Create a new instance of BinanceClient using the default options
             </summary>
         </member>
         <member name="M:Binance.Net.Clients.BinanceClient.#ctor(Binance.Net.Objects.BinanceClientOptions)">
             <summary>
-            Create a new instance of BinanceClient using provided options
+                Create a new instance of BinanceClient using provided options
             </summary>
             <param name="options">The options to use for this client</param>
-        </member>
-        <member name="M:Binance.Net.Clients.BinanceClient.SetDefaultOptions(Binance.Net.Objects.BinanceClientOptions)">
-            <summary>
-            Set the default options to be used when creating new clients
-            </summary>
-            <param name="options">Options to use as default</param>
-        </member>
-        <member name="M:Binance.Net.Clients.BinanceClient.ParseErrorResponse(Newtonsoft.Json.Linq.JToken)">
-            <inheritdoc />
         </member>
         <member name="T:Binance.Net.Clients.BinanceSocketClient">
             <inheritdoc cref="T:Binance.Net.Interfaces.Clients.IBinanceSocketClient" />
@@ -121,18 +124,18 @@
         </member>
         <member name="M:Binance.Net.Clients.BinanceSocketClient.#ctor">
             <summary>
-            Create a new instance of BinanceSocketClientSpot with default options
+                Create a new instance of BinanceSocketClientSpot with default options
             </summary>
         </member>
         <member name="M:Binance.Net.Clients.BinanceSocketClient.#ctor(Binance.Net.Objects.BinanceSocketClientOptions)">
             <summary>
-            Create a new instance of BinanceSocketClientSpot using provided options
+                Create a new instance of BinanceSocketClientSpot using provided options
             </summary>
             <param name="options">The options to use for this client</param>
         </member>
         <member name="M:Binance.Net.Clients.BinanceSocketClient.SetDefaultOptions(Binance.Net.Objects.BinanceSocketClientOptions)">
             <summary>
-            Set the default options to be used when creating new clients
+                Set the default options to be used when creating new clients
             </summary>
             <param name="options">Options to use as default</param>
         </member>
@@ -157,27 +160,22 @@
         <member name="T:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi">
             <inheritdoc cref="T:Binance.Net.Interfaces.Clients.CoinFuturesApi.IBinanceClientCoinFuturesApi" />
         </member>
-        <member name="P:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.Account">
-            <inheritdoc />
-        </member>
-        <member name="P:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.ExchangeData">
-            <inheritdoc />
-        </member>
-        <member name="P:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.Trading">
-            <inheritdoc />
-        </member>
-        <member name="P:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.ExchangeName">
+        <member name="P:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.CommonFuturesClient">
             <inheritdoc />
         </member>
         <member name="E:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.OnOrderPlaced">
             <summary>
-            Event triggered when an order is placed via this client. Only available for Spot orders
+                Event triggered when an order is placed via this client. Only available for Spot orders
             </summary>
         </member>
         <member name="E:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.OnOrderCanceled">
             <summary>
-            Event triggered when an order is canceled via this client. Note that this does not trigger when using CancelAllOrdersAsync. Only available for Spot orders
+                Event triggered when an order is canceled via this client. Note that this does not trigger when using
+                CancelAllOrdersAsync. Only available for Spot orders
             </summary>
+        </member>
+        <member name="M:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.GetSymbolName(System.String,System.String)">
+            <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.CreateAuthenticationProvider(CryptoExchange.Net.Authentication.ApiCredentials)">
             <inheritdoc />
@@ -191,10 +189,16 @@
         <member name="M:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.GetTimeOffset">
             <inheritdoc />
         </member>
-        <member name="P:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.CommonFuturesClient">
+        <member name="P:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.Account">
             <inheritdoc />
         </member>
-        <member name="M:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.GetSymbolName(System.String,System.String)">
+        <member name="P:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.ExchangeData">
+            <inheritdoc />
+        </member>
+        <member name="P:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.Trading">
+            <inheritdoc />
+        </member>
+        <member name="P:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApi.ExchangeName">
             <inheritdoc />
         </member>
         <member name="T:Binance.Net.Clients.CoinFuturesApi.BinanceClientCoinFuturesApiAccount">
@@ -467,6 +471,18 @@
         <member name="T:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApi">
             <inheritdoc cref="T:Binance.Net.Interfaces.Clients.GeneralApi.IBinanceClientGeneralApi" />
         </member>
+        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApi.CreateAuthenticationProvider(CryptoExchange.Net.Authentication.ApiCredentials)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApi.GetServerTimestampAsync">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApi.GetTimeSyncInfo">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApi.GetTimeOffset">
+            <inheritdoc />
+        </member>
         <member name="P:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApi.Brokerage">
             <inheritdoc />
         </member>
@@ -482,19 +498,10 @@
         <member name="P:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApi.SubAccount">
             <inheritdoc />
         </member>
-        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApi.CreateAuthenticationProvider(CryptoExchange.Net.Authentication.ApiCredentials)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApi.GetServerTimestampAsync">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApi.GetTimeSyncInfo">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApi.GetTimeOffset">
-            <inheritdoc />
-        </member>
         <member name="T:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiBrokerage">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiBrokerage.GetBrokerAccountInfoAsync(System.Nullable{System.Int32},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiBrokerage.CreateSubAccountAsync(System.Nullable{System.Int32},System.Threading.CancellationToken)">
@@ -588,9 +595,6 @@
             <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiBrokerage.GetSubAccountDepositHistoryAsync(System.String,System.String,System.Nullable{Binance.Net.Objects.Models.Spot.Brokerage.SubAccountData.BinanceBrokerageSubAccountDepositStatus},System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiBrokerage.GetBrokerAccountInfoAsync(System.Nullable{System.Int32},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiBrokerage.GetBrokerCommissionRebatesRecentAsync(System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32},System.Threading.CancellationToken)">
@@ -764,19 +768,7 @@
         <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.EnableFuturesForSubAccountAsync(System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.GetSubAccountFuturesDetailsAsync(System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.GetSubAccountFuturesDetailsAsync(Binance.Net.Enums.FuturesAccountType,System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
         <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.GetSubAccountsFuturesSummaryAsync(System.Nullable{System.Int32},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.GetSubAccountsFuturesPositionRiskAsync(System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.GetSubAccountsFuturesPositionRiskAsync(Binance.Net.Enums.FuturesAccountType,System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.TransferSubAccountFuturesAsync(System.String,System.String,System.Decimal,Binance.Net.Enums.SubAccountFuturesTransferType,System.Nullable{System.Int32},System.Threading.CancellationToken)">
@@ -806,6 +798,18 @@
         <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.GetUniversalTransferHistoryAsync(System.String,System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.GetSubAccountFuturesDetailsAsync(System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.GetSubAccountFuturesDetailsAsync(Binance.Net.Enums.FuturesAccountType,System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.GetSubAccountsFuturesPositionRiskAsync(System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.GetSubAccountsFuturesPositionRiskAsync(Binance.Net.Enums.FuturesAccountType,System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Binance.Net.Clients.GeneralApi.BinanceClientGeneralApiSubAccount.ToggleIpRestrictionForApiKeyAsync(System.String,System.Boolean,System.Nullable{System.Int32},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
@@ -821,27 +825,22 @@
         <member name="T:Binance.Net.Clients.SpotApi.BinanceClientSpotApi">
             <inheritdoc cref="T:Binance.Net.Interfaces.Clients.SpotApi.IBinanceClientSpotApi" />
         </member>
-        <member name="P:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.Account">
-            <inheritdoc />
-        </member>
-        <member name="P:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.ExchangeData">
-            <inheritdoc />
-        </member>
-        <member name="P:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.Trading">
-            <inheritdoc />
-        </member>
-        <member name="P:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.ExchangeName">
+        <member name="P:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.CommonSpotClient">
             <inheritdoc />
         </member>
         <member name="E:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.OnOrderPlaced">
             <summary>
-            Event triggered when an order is placed via this client. Only available for Spot orders
+                Event triggered when an order is placed via this client. Only available for Spot orders
             </summary>
         </member>
         <member name="E:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.OnOrderCanceled">
             <summary>
-            Event triggered when an order is canceled via this client. Note that this does not trigger when using CancelAllOrdersAsync. Only available for Spot orders
+                Event triggered when an order is canceled via this client. Note that this does not trigger when using
+                CancelAllOrdersAsync. Only available for Spot orders
             </summary>
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.GetSymbolName(System.String,System.String)">
+            <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.CreateAuthenticationProvider(CryptoExchange.Net.Authentication.ApiCredentials)">
             <inheritdoc />
@@ -855,10 +854,16 @@
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.GetTimeOffset">
             <inheritdoc />
         </member>
-        <member name="P:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.CommonSpotClient">
+        <member name="P:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.Account">
             <inheritdoc />
         </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.GetSymbolName(System.String,System.String)">
+        <member name="P:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.ExchangeData">
+            <inheritdoc />
+        </member>
+        <member name="P:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.Trading">
+            <inheritdoc />
+        </member>
+        <member name="P:Binance.Net.Clients.SpotApi.BinanceClientSpotApi.ExchangeName">
             <inheritdoc />
         </member>
         <member name="T:Binance.Net.Clients.SpotApi.BinanceClientSpotApiAccount">
@@ -883,15 +888,6 @@
             <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiAccount.GetDepositAddressAsync(System.String,System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiAccount.GetDailySpotAccountSnapshotAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiAccount.GetDailyMarginAccountSnapshotAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiAccount.GetDailyFutureAccountSnapshotAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiAccount.GetAccountStatusAsync(System.Nullable{System.Int32},System.Threading.CancellationToken)">
@@ -1026,6 +1022,15 @@
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiAccount.GetRebateHistoryAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiAccount.GetDailySpotAccountSnapshotAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiAccount.GetDailyMarginAccountSnapshotAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiAccount.GetDailyFutureAccountSnapshotAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="T:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData">
             <inheritdoc />
         </member>
@@ -1033,15 +1038,6 @@
             <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetServerTimeAsync(System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetExchangeInfoAsync(System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetExchangeInfoAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetExchangeInfoAsync(System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetSystemStatusAsync(System.Threading.CancellationToken)">
@@ -1071,24 +1067,6 @@
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetCurrentAvgPriceAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetTickerAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetTickersAsync(System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetPriceAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetPricesAsync(System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetBookPriceAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetAllBookPricesAsync(System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetTradeFeeAsync(System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
@@ -1105,6 +1083,33 @@
             <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetMarginPriceIndexAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetExchangeInfoAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetExchangeInfoAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetExchangeInfoAsync(System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetTickerAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetTickersAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetPriceAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetPricesAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetBookPriceAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetAllBookPricesAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiExchangeData.GetIsolatedMarginSymbolAsync(System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
@@ -1203,6 +1208,15 @@
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiTrading.GetMarginOpenOcoOrdersAsync(System.String,System.Nullable{System.Boolean},System.Nullable{System.Int64},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiTrading.GetC2CTradeHistoryAsync(Binance.Net.Enums.OrderSide,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiTrading.GetPayTradeHistoryAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiTrading.GetConvertTradeHistoryAsync(System.DateTime,System.DateTime,System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiTrading.SubscribeLeveragedTokenAsync(System.String,System.Decimal,System.Nullable{System.Int32},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
@@ -1240,15 +1254,6 @@
             <inheritdoc />
         </member>
         <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiTrading.GetLiquidityPoolInfoAsync(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiTrading.GetC2CTradeHistoryAsync(Binance.Net.Enums.OrderSide,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiTrading.GetPayTradeHistoryAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Binance.Net.Clients.SpotApi.BinanceClientSpotApiTrading.GetConvertTradeHistoryAsync(System.DateTime,System.DateTime,System.Nullable{System.Int32},System.Nullable{System.Int64},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="T:Binance.Net.Clients.SpotApi.BinanceSocketClientSpotStreams">

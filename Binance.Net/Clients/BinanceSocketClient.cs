@@ -25,14 +25,17 @@ namespace Binance.Net.Clients
     public class BinanceSocketClient : BaseSocketClient, IBinanceSocketClient
     {
         #region fields
+
         #endregion
 
         #region Api clients
 
         /// <inheritdoc />
         public IBinanceSocketClientSpotStreams SpotStreams { get; set; }
+
         /// <inheritdoc />
         public IBinanceSocketClientUsdFuturesStreams UsdFuturesStreams { get; set; }
+
         /// <inheritdoc />
         public IBinanceSocketClientCoinFuturesStreams CoinFuturesStreams { get; set; }
 
@@ -41,31 +44,32 @@ namespace Binance.Net.Clients
         #region constructor/destructor
 
         /// <summary>
-        /// Create a new instance of BinanceSocketClientSpot with default options
+        ///     Create a new instance of BinanceSocketClientSpot with default options
         /// </summary>
         public BinanceSocketClient() : this(BinanceSocketClientOptions.Default)
         {
         }
 
         /// <summary>
-        /// Create a new instance of BinanceSocketClientSpot using provided options
+        ///     Create a new instance of BinanceSocketClientSpot using provided options
         /// </summary>
         /// <param name="options">The options to use for this client</param>
         public BinanceSocketClient(BinanceSocketClientOptions options) : base("Binance", options)
         {
-            SetDataInterpreter((data) => string.Empty, null);
+            SetDataInterpreter(data => string.Empty, null);
             RateLimitPerSocketPerSecond = 4;
 
             SpotStreams = AddApiClient(new BinanceSocketClientSpotStreams(log, this, options));
             UsdFuturesStreams = AddApiClient(new BinanceSocketClientUsdFuturesStreams(log, this, options));
             CoinFuturesStreams = AddApiClient(new BinanceSocketClientCoinFuturesStreams(log, this, options));
         }
-        #endregion 
+
+        #endregion
 
         #region methods
 
         /// <summary>
-        /// Set the default options to be used when creating new clients
+        ///     Set the default options to be used when creating new clients
         /// </summary>
         /// <param name="options">Options to use as default</param>
         public static void SetDefaultOptions(BinanceSocketClientOptions options)
@@ -73,43 +77,53 @@ namespace Binance.Net.Clients
             BinanceSocketClientOptions.Default = options;
         }
 
-        internal CallResult<T> DeserializeInternal<T>(JToken obj, JsonSerializer? serializer = null, int? requestId = null)
-            => Deserialize<T>(obj, serializer, requestId);
-
-        internal Task<CallResult<UpdateSubscription>> SubscribeInternal<T>(SocketApiClient apiClient, string url, IEnumerable<string> topics, Action<DataEvent<T>> onData, CancellationToken ct)
+        internal CallResult<T> DeserializeInternal<T>(JToken obj, JsonSerializer? serializer = null,
+            int? requestId = null)
         {
-            var request = new BinanceSocketRequest
+            return Deserialize<T>(obj, serializer, requestId);
+        }
+
+        internal Task<CallResult<UpdateSubscription>> SubscribeInternal<T>(SocketApiClient apiClient, string url,
+            IEnumerable<string> topics, Action<DataEvent<T>> onData, CancellationToken ct)
+        {
+            BinanceSocketRequest request = new BinanceSocketRequest
             {
-                Method = "SUBSCRIBE",
-                Params = topics.ToArray(),
-                Id = NextId()
+                Method = "SUBSCRIBE", Params = topics.ToArray(), Id = NextId()
             };
 
             return SubscribeAsync(apiClient, url.AppendPath("stream"), request, null, false, onData, ct);
         }
 
         /// <inheritdoc />
-        protected override bool HandleQueryResponse<T>(SocketConnection s, object request, JToken data, out CallResult<T> callResult)
+        protected override bool HandleQueryResponse<T>(SocketConnection s, object request, JToken data,
+            out CallResult<T> callResult)
         {
             throw new NotImplementedException();
         }
 
         /// <inheritdoc />
-        protected override bool HandleSubscriptionResponse(SocketConnection s, SocketSubscription subscription, object request, JToken message, out CallResult<object>? callResult)
+        protected override bool HandleSubscriptionResponse(SocketConnection s, SocketSubscription subscription,
+            object request, JToken message, out CallResult<object>? callResult)
         {
             callResult = null;
             if (message.Type != JTokenType.Object)
+            {
                 return false;
+            }
 
-            var id = message["id"];
+            JToken? id = message["id"];
             if (id == null)
+            {
                 return false;
+            }
 
-            var bRequest = (BinanceSocketRequest)request;
+            BinanceSocketRequest bRequest = (BinanceSocketRequest)request;
             if ((int)id != bRequest.Id)
+            {
                 return false;
+            }
 
-            var result = message["result"];
+            JToken? result = message["result"];
             if (result != null && result.Type == JTokenType.Null)
             {
                 log.Write(LogLevel.Trace, $"Socket {s.Socket.Id} Subscription completed");
@@ -117,7 +131,7 @@ namespace Binance.Net.Clients
                 return true;
             }
 
-            var error = message["error"];
+            JToken? error = message["error"];
             if (error == null)
             {
                 callResult = new CallResult<object>(new ServerError("Unknown error: " + message));
@@ -132,18 +146,23 @@ namespace Binance.Net.Clients
         protected override bool MessageMatchesHandler(SocketConnection socketConnection, JToken message, object request)
         {
             if (message.Type != JTokenType.Object)
+            {
                 return false;
+            }
 
-            var bRequest = (BinanceSocketRequest)request;
-            var stream = message["stream"];
+            BinanceSocketRequest bRequest = (BinanceSocketRequest)request;
+            JToken? stream = message["stream"];
             if (stream == null)
+            {
                 return false;
+            }
 
             return bRequest.Params.Contains(stream.ToString());
         }
 
         /// <inheritdoc />
-        protected override bool MessageMatchesHandler(SocketConnection socketConnection, JToken message, string identifier)
+        protected override bool MessageMatchesHandler(SocketConnection socketConnection, JToken message,
+            string identifier)
         {
             return true;
         }
@@ -155,28 +174,38 @@ namespace Binance.Net.Clients
         }
 
         /// <inheritdoc />
-        protected override async Task<bool> UnsubscribeAsync(SocketConnection connection, SocketSubscription subscription)
+        protected override async Task<bool> UnsubscribeAsync(SocketConnection connection,
+            SocketSubscription subscription)
         {
-            var topics = ((BinanceSocketRequest)subscription.Request!).Params;
-            var unsub = new BinanceSocketRequest { Method = "UNSUBSCRIBE", Params = topics, Id = NextId() };
-            var result = false;
+            string[] topics = ((BinanceSocketRequest)subscription.Request!).Params;
+            BinanceSocketRequest unsub =
+                new BinanceSocketRequest { Method = "UNSUBSCRIBE", Params = topics, Id = NextId() };
+            bool result = false;
 
             if (!connection.Socket.IsOpen)
+            {
                 return true;
+            }
 
             await connection.SendAndWaitAsync(unsub, ClientOptions.SocketResponseTimeout, data =>
             {
                 if (data.Type != JTokenType.Object)
+                {
                     return false;
+                }
 
-                var id = data["id"];
+                JToken? id = data["id"];
                 if (id == null)
+                {
                     return false;
+                }
 
                 if ((int)id != unsub.Id)
+                {
                     return false;
+                }
 
-                var result = data["result"];
+                JToken? result = data["result"];
                 if (result?.Type == JTokenType.Null)
                 {
                     result = true;
@@ -187,6 +216,7 @@ namespace Binance.Net.Clients
             }).ConfigureAwait(false);
             return result;
         }
+
         #endregion
     }
 }

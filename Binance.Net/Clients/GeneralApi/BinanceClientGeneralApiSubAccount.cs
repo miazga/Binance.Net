@@ -66,17 +66,25 @@ namespace Binance.Net.Clients.GeneralApi
         #region Query Sub-account List(For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceSubAccount>>> GetSubAccountsAsync(string? email = null, int? page = null, int? limit = null, int? receiveWindow = null, bool? isFreeze = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceSubAccount>>> GetSubAccountsAsync(string? email = null,
+            int? page = null, int? limit = null, int? receiveWindow = null, bool? isFreeze = null,
+            CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("email", email);
             parameters.AddOptionalParameter("page", page?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("isFreeze", isFreeze);
 
-            var result = await _baseClient.SendRequestInternal<BinanceSubAccountWrapper>(_baseClient.GetUrl(subAccountListEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
-            return result ? result.As<IEnumerable<BinanceSubAccount>>(result.Data.SubAccounts) : result.As<IEnumerable<BinanceSubAccount>>(default);
+            WebCallResult<BinanceSubAccountWrapper>? result = await _baseClient
+                .SendRequestInternal<BinanceSubAccountWrapper>(_baseClient.GetUrl(subAccountListEndpoint, "sapi", "1"),
+                    HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
+            return result
+                ? result.As<IEnumerable<BinanceSubAccount>>(result.Data.SubAccounts)
+                : result.As<IEnumerable<BinanceSubAccount>>(default);
         }
 
         #endregion
@@ -84,18 +92,26 @@ namespace Binance.Net.Clients.GeneralApi
         #region Query Sub-account Transfer History(For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceSubAccountTransfer>>> GetSubAccountTransferHistoryForMasterAsync(string? fromEmail = null, string? toEmail = null, DateTime? startTime = null, DateTime? endTime = null, int? page = null, int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceSubAccountTransfer>>>
+            GetSubAccountTransferHistoryForMasterAsync(string? fromEmail = null, string? toEmail = null,
+                DateTime? startTime = null, DateTime? endTime = null, int? page = null, int? limit = null,
+                int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("fromEmail", fromEmail);
             parameters.AddOptionalParameter("toEmail", toEmail);
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
             parameters.AddOptionalParameter("page", page?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            var result = await _baseClient.SendRequestInternal<IEnumerable<BinanceSubAccountTransfer>>(_baseClient.GetUrl(subAccountTransferHistoryEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
+            WebCallResult<IEnumerable<BinanceSubAccountTransfer>>? result = await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceSubAccountTransfer>>(
+                    _baseClient.GetUrl(subAccountTransferHistoryEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters,
+                    true).ConfigureAwait(false);
             return result;
         }
 
@@ -104,25 +120,39 @@ namespace Binance.Net.Clients.GeneralApi
         #region Sub-account Transfer(For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceTransaction>> TransferSubAccountAsync(TransferAccountType fromAccountType, TransferAccountType toAccountType, string asset, decimal quantity, string? fromEmail = null, string? toEmail = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceTransaction>> TransferSubAccountAsync(
+            TransferAccountType fromAccountType, TransferAccountType toAccountType, string asset, decimal quantity,
+            string? fromEmail = null, string? toEmail = null, int? receiveWindow = null, CancellationToken ct = default)
         {
             if (string.IsNullOrEmpty(fromEmail) && string.IsNullOrEmpty(toEmail))
+            {
                 throw new ArgumentException("fromEmail and/or toEmail should be provided");
+            }
+
             asset.ValidateNotNull(nameof(asset));
 
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                { "fromAccountType", JsonConvert.SerializeObject(fromAccountType, new TransferAccountTypeConverter(false)) },
-                { "toAccountType", JsonConvert.SerializeObject(toAccountType, new TransferAccountTypeConverter(false)) },
+                {
+                    "fromAccountType",
+                    JsonConvert.SerializeObject(fromAccountType, new TransferAccountTypeConverter(false))
+                },
+                {
+                    "toAccountType", JsonConvert.SerializeObject(toAccountType, new TransferAccountTypeConverter(false))
+                },
                 { "asset", asset },
                 { "amount", quantity.ToString(CultureInfo.InvariantCulture) }
             };
             parameters.AddOptionalParameter("fromEmail", fromEmail);
             parameters.AddOptionalParameter("toEmail", toEmail);
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceTransaction>(_baseClient.GetUrl(transferSubAccountEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters, true, HttpMethodParameterPosition.InUri).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceTransaction>(_baseClient.GetUrl(transferSubAccountEndpoint, "sapi", "1"),
+                    HttpMethod.Post, ct, parameters, true, HttpMethodParameterPosition.InUri).ConfigureAwait(false);
         }
 
         #endregion
@@ -130,69 +160,86 @@ namespace Binance.Net.Clients.GeneralApi
         #region Query Sub-account Assets(For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceBalance>>> GetSubAccountAssetsAsync(string email, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceBalance>>> GetSubAccountAssetsAsync(string email,
+            int? receiveWindow = null, CancellationToken ct = default)
         {
             email.ValidateNotNull(nameof(email));
 
-            var parameters = new Dictionary<string, object>
-            {
-                { "email", email }
-            };
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "email", email } };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            var result = await _baseClient.SendRequestInternal<BinanceSubAccountAsset>(_baseClient.GetUrl(subAccountAssetsEndpoint, "sapi", "3"), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
+            WebCallResult<BinanceSubAccountAsset>? result = await _baseClient
+                .SendRequestInternal<BinanceSubAccountAsset>(_baseClient.GetUrl(subAccountAssetsEndpoint, "sapi", "3"),
+                    HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
             if (!result.Success)
+            {
                 return result.As<IEnumerable<BinanceBalance>>(default);
+            }
 
             if (!result.Data.Success)
+            {
                 return result.AsError<IEnumerable<BinanceBalance>>(new ServerError(result.Data!.Message));
+            }
 
             return result.As(result.Data.Balances);
         }
+
         #endregion
 
         #region Get Sub-account Deposit Address (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountDepositAddress>> GetSubAccountDepositAddressAsync(string email, string asset, string? network = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountDepositAddress>> GetSubAccountDepositAddressAsync(string email,
+            string asset, string? network = null, int? receiveWindow = null, CancellationToken ct = default)
         {
             email.ValidateNotNull(nameof(email));
             asset.ValidateNotNull(nameof(asset));
 
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                { "email", email },
-                { "coin", asset }
+                { "email", email }, { "coin", asset }
             };
 
             parameters.AddOptionalParameter("network", network);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountDepositAddress>(_baseClient.GetUrl(subAccountDepositAddressEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountDepositAddress>(
+                    _baseClient.GetUrl(subAccountDepositAddressEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters,
+                    true).ConfigureAwait(false);
         }
+
         #endregion
 
         #region Get Sub-account Deposit History (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceSubAccountDeposit>>> GetSubAccountDepositHistoryAsync(string email, string? asset = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, int? offset = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceSubAccountDeposit>>> GetSubAccountDepositHistoryAsync(
+            string email, string? asset = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null,
+            int? offset = null, int? receiveWindow = null, CancellationToken ct = default)
         {
             email.ValidateNotNull(nameof(email));
 
-            var parameters = new Dictionary<string, object>
-            {
-                { "email", email }
-            };
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "email", email } };
 
             parameters.AddOptionalParameter("coin", asset);
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("offset", offset?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceSubAccountDeposit>>(_baseClient.GetUrl(subAccountDepositHistoryEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceSubAccountDeposit>>(
+                    _baseClient.GetUrl(subAccountDepositHistoryEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters,
+                    true).ConfigureAwait(false);
         }
 
         #endregion
@@ -200,13 +247,19 @@ namespace Binance.Net.Clients.GeneralApi
         #region Get Sub-account's Status on Margin/Futures(For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceSubAccountStatus>>> GetSubAccountStatusAsync(string? email = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceSubAccountStatus>>> GetSubAccountStatusAsync(
+            string? email = null, int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("email", email);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceSubAccountStatus>>(_baseClient.GetUrl(subAccountStatusEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceSubAccountStatus>>(
+                    _baseClient.GetUrl(subAccountStatusEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true,
+                    weight: 10).ConfigureAwait(false);
         }
 
         #endregion
@@ -214,18 +267,21 @@ namespace Binance.Net.Clients.GeneralApi
         #region Enable Margin for Sub-account (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountMarginEnabled>> EnableMarginForSubAccountAsync(string email, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountMarginEnabled>> EnableMarginForSubAccountAsync(string email,
+            int? receiveWindow = null, CancellationToken ct = default)
         {
             email.ValidateNotNull(nameof(email));
 
-            var parameters = new Dictionary<string, object>
-            {
-                { "email", email }
-            };
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "email", email } };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountMarginEnabled>(_baseClient.GetUrl(subAccountEnableMarginEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountMarginEnabled>(
+                    _baseClient.GetUrl(subAccountEnableMarginEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters,
+                    true).ConfigureAwait(false);
         }
 
         #endregion
@@ -233,18 +289,21 @@ namespace Binance.Net.Clients.GeneralApi
         #region Get Detail on Sub-account's Margin Account (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountMarginDetails>> GetSubAccountMarginDetailsAsync(string email, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountMarginDetails>> GetSubAccountMarginDetailsAsync(string email,
+            int? receiveWindow = null, CancellationToken ct = default)
         {
             email.ValidateNotNull(nameof(email));
 
-            var parameters = new Dictionary<string, object>
-            {
-                { "email", email }
-            };
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "email", email } };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountMarginDetails>(_baseClient.GetUrl(subAccountMarginDetailsEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountMarginDetails>(
+                    _baseClient.GetUrl(subAccountMarginDetailsEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters,
+                    true, weight: 10).ConfigureAwait(false);
         }
 
         #endregion
@@ -252,65 +311,39 @@ namespace Binance.Net.Clients.GeneralApi
         #region Get Summary of Sub-account's Margin Account (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountsMarginSummary>> GetSubAccountsMarginSummaryAsync(int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountsMarginSummary>> GetSubAccountsMarginSummaryAsync(
+            int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>();
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountsMarginSummary>(_baseClient.GetUrl(subAccountMarginSummaryEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountsMarginSummary>(
+                    _baseClient.GetUrl(subAccountMarginSummaryEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters,
+                    true, weight: 10).ConfigureAwait(false);
         }
 
         #endregion
 
-        #region Enable Futures for Sub-account (For Master Account) 
+        #region Enable Futures for Sub-account (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountFuturesEnabled>> EnableFuturesForSubAccountAsync(string email, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountFuturesEnabled>> EnableFuturesForSubAccountAsync(string email,
+            int? receiveWindow = null, CancellationToken ct = default)
         {
             email.ValidateNotNull(nameof(email));
-            var parameters = new Dictionary<string, object>
-            {
-                { "email", email }
-            };
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "email", email } };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountFuturesEnabled>(_baseClient.GetUrl(subAccountEnableFuturesEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters, true).ConfigureAwait(false);
-        }
-
-        #endregion
-
-        #region Get Detail on Sub-account's Futures Account (For Master Account) 
-
-        /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountFuturesDetails>> GetSubAccountFuturesDetailsAsync(string email, int? receiveWindow = null, CancellationToken ct = default)
-        {
-            email.ValidateNotNull(nameof(email));
-
-            var parameters = new Dictionary<string, object>
-            {
-                { "email", email }
-            };
-
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-
-            return await _baseClient.SendRequestInternal<BinanceSubAccountFuturesDetails>(_baseClient.GetUrl(subAccountFuturesDetailsEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
-        }
-
-        /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountFuturesDetailsV2>> GetSubAccountFuturesDetailsAsync(FuturesAccountType futuresAccountType, string email, int? receiveWindow = null, CancellationToken ct = default)
-        {
-            email.ValidateNotNull(nameof(email));
-
-            var parameters = new Dictionary<string, object>
-            {
-                { "email", email },
-                { "futuresType", JsonConvert.SerializeObject(futuresAccountType, new FuturesAccountTypeConverter(false)) }
-            };
-
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-
-            return await _baseClient.SendRequestInternal<BinanceSubAccountFuturesDetailsV2>(_baseClient.GetUrl(subAccountFuturesDetailsEndpoint, "sapi", "2"), HttpMethod.Get, ct, parameters, true, weight: 1).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountFuturesEnabled>(
+                    _baseClient.GetUrl(subAccountEnableFuturesEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters,
+                    true).ConfigureAwait(false);
         }
 
         #endregion
@@ -318,43 +351,18 @@ namespace Binance.Net.Clients.GeneralApi
         #region Get Summary of Sub-account's Futures Account (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountsFuturesSummary>> GetSubAccountsFuturesSummaryAsync(int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountsFuturesSummary>> GetSubAccountsFuturesSummaryAsync(
+            int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>();
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountsFuturesSummary>(_baseClient.GetUrl(subAccountFuturesSummaryEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
-        }
-
-        #endregion
-
-        #region Get Futures Postion-Risk of Sub-account (For Master Account)
-
-        /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceSubAccountFuturesPositionRisk>>> GetSubAccountsFuturesPositionRiskAsync(string email, int? receiveWindow = null, CancellationToken ct = default)
-        {
-            var parameters = new Dictionary<string, object>
-            {
-                { "email", email }
-            };
-
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceSubAccountFuturesPositionRisk>>(_baseClient.GetUrl(subAccountFuturesPositionRiskEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
-        }
-
-        /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountFuturesPositionRiskV2>> GetSubAccountsFuturesPositionRiskAsync(FuturesAccountType futuresAccountType, string email, int? receiveWindow = null, CancellationToken ct = default)
-        {
-            var parameters = new Dictionary<string, object>
-            {
-                { "email", email },
-                { "futuresType", JsonConvert.SerializeObject(futuresAccountType, new FuturesAccountTypeConverter(false)) }
-            };
-
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-
-            return await _baseClient.SendRequestInternal<BinanceSubAccountFuturesPositionRiskV2>(_baseClient.GetUrl(subAccountFuturesPositionRiskEndpoint, "sapi", "2"), HttpMethod.Get, ct, parameters, true, weight: 1).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountsFuturesSummary>(
+                    _baseClient.GetUrl(subAccountFuturesSummaryEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters,
+                    true).ConfigureAwait(false);
         }
 
         #endregion
@@ -362,12 +370,14 @@ namespace Binance.Net.Clients.GeneralApi
         #region Futures Transfer for Sub-account (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountTransaction>> TransferSubAccountFuturesAsync(string email, string asset, decimal quantity, SubAccountFuturesTransferType type, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountTransaction>> TransferSubAccountFuturesAsync(string email,
+            string asset, decimal quantity, SubAccountFuturesTransferType type, int? receiveWindow = null,
+            CancellationToken ct = default)
         {
             email.ValidateNotNull(nameof(email));
             asset.ValidateNotNull(nameof(asset));
 
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
                 { "email", email },
                 { "asset", asset },
@@ -375,21 +385,29 @@ namespace Binance.Net.Clients.GeneralApi
                 { "amount", quantity.ToString(CultureInfo.InvariantCulture) }
             };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountTransaction>(_baseClient.GetUrl(subAccountTransferFuturesSpotEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountTransaction>(
+                    _baseClient.GetUrl(subAccountTransferFuturesSpotEndpoint, "sapi", "1"), HttpMethod.Post, ct,
+                    parameters, true).ConfigureAwait(false);
         }
+
         #endregion
 
         #region Margin Transfer for Sub-account (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountTransaction>> TransferSubAccountMarginAsync(string email, string asset, decimal quantity, SubAccountMarginTransferType type, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountTransaction>> TransferSubAccountMarginAsync(string email,
+            string asset, decimal quantity, SubAccountMarginTransferType type, int? receiveWindow = null,
+            CancellationToken ct = default)
         {
             email.ValidateNotNull(nameof(email));
             asset.ValidateNotNull(nameof(asset));
 
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
                 { "email", email },
                 { "asset", asset },
@@ -397,81 +415,119 @@ namespace Binance.Net.Clients.GeneralApi
                 { "amount", quantity.ToString(CultureInfo.InvariantCulture) }
             };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountTransaction>(_baseClient.GetUrl(subAccountTransferMarginSpotEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountTransaction>(
+                    _baseClient.GetUrl(subAccountTransferMarginSpotEndpoint, "sapi", "1"), HttpMethod.Post, ct,
+                    parameters, true).ConfigureAwait(false);
         }
+
         #endregion
 
         #region Transfer to Sub-account of Same Master (For Sub-account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountTransaction>> TransferSubAccountToSubAccountAsync(string email, string asset, decimal quantity, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountTransaction>> TransferSubAccountToSubAccountAsync(string email,
+            string asset, decimal quantity, int? receiveWindow = null, CancellationToken ct = default)
         {
             email.ValidateNotNull(nameof(email));
             asset.ValidateNotNull(nameof(asset));
 
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
                 { "toEmail", email },
                 { "asset", asset },
                 { "amount", quantity.ToString(CultureInfo.InvariantCulture) }
             };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountTransaction>(_baseClient.GetUrl(subAccountTransferToSubEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters, true, HttpMethodParameterPosition.InUri).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountTransaction>(
+                    _baseClient.GetUrl(subAccountTransferToSubEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters,
+                    true, HttpMethodParameterPosition.InUri).ConfigureAwait(false);
         }
+
         #endregion
 
         #region Transfer to Master (For Sub-account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountTransaction>> TransferSubAccountToMasterAsync(string asset, decimal quantity, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountTransaction>> TransferSubAccountToMasterAsync(string asset,
+            decimal quantity, int? receiveWindow = null, CancellationToken ct = default)
         {
             asset.ValidateNotNull(nameof(asset));
 
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                { "asset", asset },
-                { "amount", quantity.ToString(CultureInfo.InvariantCulture) }
+                { "asset", asset }, { "amount", quantity.ToString(CultureInfo.InvariantCulture) }
             };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountTransaction>(_baseClient.GetUrl(subAccountTransferToMasterEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountTransaction>(
+                    _baseClient.GetUrl(subAccountTransferToMasterEndpoint, "sapi", "1"), HttpMethod.Post, ct,
+                    parameters, true).ConfigureAwait(false);
         }
+
         #endregion
 
         #region Sub-account Transfer History (For Sub-account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceSubAccountTransferSubAccount>>> GetSubAccountTransferHistoryForSubAccountAsync(string? asset = null, SubAccountTransferSubAccountType? type = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceSubAccountTransferSubAccount>>>
+            GetSubAccountTransferHistoryForSubAccountAsync(string? asset = null,
+                SubAccountTransferSubAccountType? type = null, DateTime? startTime = null, DateTime? endTime = null,
+                int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("asset", asset);
-            parameters.AddOptionalParameter("type", type == null ? null : JsonConvert.SerializeObject(type, new SubAccountTransferSubAccountTypeConverter(false)));
+            parameters.AddOptionalParameter("type",
+                type == null
+                    ? null
+                    : JsonConvert.SerializeObject(type, new SubAccountTransferSubAccountTypeConverter(false)));
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceSubAccountTransferSubAccount>>(_baseClient.GetUrl(subAccountTransferHistorySubAccountEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceSubAccountTransferSubAccount>>(
+                    _baseClient.GetUrl(subAccountTransferHistorySubAccountEndpoint, "sapi", "1"), HttpMethod.Get, ct,
+                    parameters, true).ConfigureAwait(false);
         }
+
         #endregion
 
         #region Query Sub-account Spot Assets Summary (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountSpotAssetsSummary>> GetSubAccountBtcValuesAsync(string? email = null, int? page = null, int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountSpotAssetsSummary>> GetSubAccountBtcValuesAsync(
+            string? email = null, int? page = null, int? limit = null, int? receiveWindow = null,
+            CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("email", email);
             parameters.AddOptionalParameter("page", page);
             parameters.AddOptionalParameter("limit", limit);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountSpotAssetsSummary>(_baseClient.GetUrl(subAccountSpotSummaryEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountSpotAssetsSummary>(
+                    _baseClient.GetUrl(subAccountSpotSummaryEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters,
+                    true).ConfigureAwait(false);
         }
 
         #endregion
@@ -479,16 +535,22 @@ namespace Binance.Net.Clients.GeneralApi
         #region Create a Virtual Sub-account(For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountEmail>> CreateVirtualSubAccountAsync(string subAccountString, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountEmail>> CreateVirtualSubAccountAsync(string subAccountString,
+            int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
                 { "subAccountString", subAccountString }
             };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountEmail>(_baseClient.GetUrl(subAccountCreateVirtualEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters, true, postPosition: HttpMethodParameterPosition.InUri).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountEmail>(
+                    _baseClient.GetUrl(subAccountCreateVirtualEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters,
+                    true, HttpMethodParameterPosition.InUri).ConfigureAwait(false);
         }
 
         #endregion
@@ -496,17 +558,22 @@ namespace Binance.Net.Clients.GeneralApi
         #region Enable Leverage Token for Sub-account (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceSubAccountBlvt>> EnableBlvtForSubAccountAsync(string email, bool enable, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceSubAccountBlvt>> EnableBlvtForSubAccountAsync(string email, bool enable,
+            int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                { "email", email },
-                { "enableBlvt", enable }
+                { "email", email }, { "enableBlvt", enable }
             };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceSubAccountBlvt>(_baseClient.GetUrl(subAccountEnableBlvtEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountBlvt>(
+                    _baseClient.GetUrl(subAccountEnableBlvtEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters,
+                    true).ConfigureAwait(false);
         }
 
         #endregion
@@ -514,78 +581,200 @@ namespace Binance.Net.Clients.GeneralApi
         #region Query Universal Transfer History (For Master Account)
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceSubAccountUniversalTransferTransaction>>> GetUniversalTransferHistoryAsync(string? fromEmail = null, string? toEmail = null, DateTime? startTime = null, DateTime? endTime = null, int? page = null, int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceSubAccountUniversalTransferTransaction>>>
+            GetUniversalTransferHistoryAsync(string? fromEmail = null, string? toEmail = null,
+                DateTime? startTime = null, DateTime? endTime = null, int? page = null, int? limit = null,
+                int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("fromEmail", fromEmail);
             parameters.AddOptionalParameter("toEmail", toEmail);
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
             parameters.AddOptionalParameter("page", page?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            var result = await _baseClient.SendRequestInternal<BinanceSubAccountUniversalTransfersList>(_baseClient.GetUrl(queryUniversalTransferHistoryEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
-            return result ? result.As<IEnumerable<BinanceSubAccountUniversalTransferTransaction>>(result.Data.Transactions) : result.As<IEnumerable<BinanceSubAccountUniversalTransferTransaction>>(default);
+            WebCallResult<BinanceSubAccountUniversalTransfersList>? result = await _baseClient
+                .SendRequestInternal<BinanceSubAccountUniversalTransfersList>(
+                    _baseClient.GetUrl(queryUniversalTransferHistoryEndpoint, "sapi", "1"), HttpMethod.Get, ct,
+                    parameters, true).ConfigureAwait(false);
+            return result
+                ? result.As(result.Data.Transactions)
+                : result.As<IEnumerable<BinanceSubAccountUniversalTransferTransaction>>(default);
+        }
+
+        #endregion
+
+        #region Get Detail on Sub-account's Futures Account (For Master Account)
+
+        /// <inheritdoc />
+        public async Task<WebCallResult<BinanceSubAccountFuturesDetails>> GetSubAccountFuturesDetailsAsync(string email,
+            int? receiveWindow = null, CancellationToken ct = default)
+        {
+            email.ValidateNotNull(nameof(email));
+
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "email", email } };
+
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountFuturesDetails>(
+                    _baseClient.GetUrl(subAccountFuturesDetailsEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters,
+                    true, weight: 10).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task<WebCallResult<BinanceSubAccountFuturesDetailsV2>> GetSubAccountFuturesDetailsAsync(
+            FuturesAccountType futuresAccountType, string email, int? receiveWindow = null,
+            CancellationToken ct = default)
+        {
+            email.ValidateNotNull(nameof(email));
+
+            Dictionary<string, object> parameters = new Dictionary<string, object>
+            {
+                { "email", email },
+                {
+                    "futuresType",
+                    JsonConvert.SerializeObject(futuresAccountType, new FuturesAccountTypeConverter(false))
+                }
+            };
+
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountFuturesDetailsV2>(
+                    _baseClient.GetUrl(subAccountFuturesDetailsEndpoint, "sapi", "2"), HttpMethod.Get, ct, parameters,
+                    true, weight: 1).ConfigureAwait(false);
+        }
+
+        #endregion
+
+        #region Get Futures Postion-Risk of Sub-account (For Master Account)
+
+        /// <inheritdoc />
+        public async Task<WebCallResult<IEnumerable<BinanceSubAccountFuturesPositionRisk>>>
+            GetSubAccountsFuturesPositionRiskAsync(string email, int? receiveWindow = null,
+                CancellationToken ct = default)
+        {
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "email", email } };
+
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceSubAccountFuturesPositionRisk>>(
+                    _baseClient.GetUrl(subAccountFuturesPositionRiskEndpoint, "sapi", "1"), HttpMethod.Get, ct,
+                    parameters, true, weight: 10).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task<WebCallResult<BinanceSubAccountFuturesPositionRiskV2>> GetSubAccountsFuturesPositionRiskAsync(
+            FuturesAccountType futuresAccountType, string email, int? receiveWindow = null,
+            CancellationToken ct = default)
+        {
+            Dictionary<string, object> parameters = new Dictionary<string, object>
+            {
+                { "email", email },
+                {
+                    "futuresType",
+                    JsonConvert.SerializeObject(futuresAccountType, new FuturesAccountTypeConverter(false))
+                }
+            };
+
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+
+            return await _baseClient
+                .SendRequestInternal<BinanceSubAccountFuturesPositionRiskV2>(
+                    _baseClient.GetUrl(subAccountFuturesPositionRiskEndpoint, "sapi", "2"), HttpMethod.Get, ct,
+                    parameters, true, weight: 1).ConfigureAwait(false);
         }
 
         #endregion
 
         #region IP restrictions
+
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceIpRestriction>> ToggleIpRestrictionForApiKeyAsync(string apiKey, bool enable, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceIpRestriction>> ToggleIpRestrictionForApiKeyAsync(string apiKey,
+            bool enable, int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                { "accountApiKey", apiKey },
-                { "ipRestrict", enable.ToString() }
+                { "accountApiKey", apiKey }, { "ipRestrict", enable.ToString() }
             };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceIpRestriction>(_baseClient.GetUrl(toggleIpRestrictionEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true, weight: 3000).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceIpRestriction>(_baseClient.GetUrl(toggleIpRestrictionEndpoint, "sapi", "1"),
+                    HttpMethod.Get, ct, parameters, true, weight: 3000).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceIpRestriction>> AddIpToWhitelistForApiKeyAsync(string apiKey, IEnumerable<string> ipAddresses, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceIpRestriction>> AddIpToWhitelistForApiKeyAsync(string apiKey,
+            IEnumerable<string> ipAddresses, int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                { "accountApiKey", apiKey },
-                { "ipAddress", string.Join(",", ipAddresses) }
+                { "accountApiKey", apiKey }, { "ipAddress", string.Join(",", ipAddresses) }
             };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceIpRestriction>(_baseClient.GetUrl(addIpRestrictionListEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters, true, weight: 3000).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceIpRestriction>(
+                    _baseClient.GetUrl(addIpRestrictionListEndpoint, "sapi", "1"), HttpMethod.Post, ct, parameters,
+                    true, weight: 3000).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceIpRestriction>> RemoveIpFromWhitelistForApiKeyAsync(string apiKey, IEnumerable<string> ipAddresses, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceIpRestriction>> RemoveIpFromWhitelistForApiKeyAsync(string apiKey,
+            IEnumerable<string> ipAddresses, int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                { "accountApiKey", apiKey },
-                { "ipAddress", string.Join(",", ipAddresses) },
+                { "accountApiKey", apiKey }, { "ipAddress", string.Join(",", ipAddresses) }
             };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceIpRestriction>(_baseClient.GetUrl(removeIpRestrictionListEndpoint, "sapi", "1"), HttpMethod.Delete, ct, parameters, true, weight: 3000).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceIpRestriction>(
+                    _baseClient.GetUrl(removeIpRestrictionListEndpoint, "sapi", "1"), HttpMethod.Delete, ct, parameters,
+                    true, weight: 3000).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceIpRestriction>> GetIpWhitelistForApiKeyAsync(string apiKey, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceIpRestriction>> GetIpWhitelistForApiKeyAsync(string apiKey,
+            int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
-            {
-                { "accountApiKey", apiKey }
-            };
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "accountApiKey", apiKey } };
 
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceIpRestriction>(_baseClient.GetUrl(getIpRestrictionListEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true, weight: 3000).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceIpRestriction>(
+                    _baseClient.GetUrl(getIpRestrictionListEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true,
+                    weight: 3000).ConfigureAwait(false);
         }
+
         #endregion
     }
 }

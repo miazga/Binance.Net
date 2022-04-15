@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Binance.Net.Converters;
 using Binance.Net.Enums;
 using Binance.Net.Interfaces.Clients.SpotApi;
+using Binance.Net.Objects.Internal;
 using Binance.Net.Objects.Models;
 using Binance.Net.Objects.Models.Spot;
 using Binance.Net.Objects.Models.Spot.Blvt;
@@ -106,11 +107,11 @@ namespace Binance.Net.Clients.SpotApi
             _log = log;
         }
 
-        #region Test New Order 
+        #region Test New Order
 
         /// <inheritdoc />
         public async Task<WebCallResult<BinancePlacedOrder>> PlaceTestOrderAsync(string symbol,
-            Enums.OrderSide side,
+            OrderSide side,
             SpotOrderType type,
             decimal? quantity = null,
             decimal? quoteQuantity = null,
@@ -148,7 +149,7 @@ namespace Binance.Net.Clients.SpotApi
 
         /// <inheritdoc />
         public async Task<WebCallResult<BinancePlacedOrder>> PlaceOrderAsync(string symbol,
-            Enums.OrderSide side,
+            OrderSide side,
             SpotOrderType type,
             decimal? quantity = null,
             decimal? quoteQuantity = null,
@@ -161,7 +162,8 @@ namespace Binance.Net.Clients.SpotApi
             int? receiveWindow = null,
             CancellationToken ct = default)
         {
-            var result = await _baseClient.PlaceOrderInternal(_baseClient.GetUrl(newOrderEndpoint, api, signedVersion),
+            WebCallResult<BinancePlacedOrder>? result = await _baseClient.PlaceOrderInternal(
+                _baseClient.GetUrl(newOrderEndpoint, api, signedVersion),
                 symbol,
                 side,
                 type,
@@ -179,7 +181,13 @@ namespace Binance.Net.Clients.SpotApi
                 1,
                 ct).ConfigureAwait(false);
             if (result)
-                _baseClient.InvokeOrderPlaced(new OrderId() { SourceObject = result.Data, Id = result.Data.Id.ToString(CultureInfo.InvariantCulture) });
+            {
+                _baseClient.InvokeOrderPlaced(new OrderId
+                {
+                    SourceObject = result.Data, Id = result.Data.Id.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
             return result;
         }
 
@@ -188,24 +196,35 @@ namespace Binance.Net.Clients.SpotApi
         #region Cancel Order
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceOrderBase>> CancelOrderAsync(string symbol, long? orderId = null, string? origClientOrderId = null, string? newClientOrderId = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceOrderBase>> CancelOrderAsync(string symbol, long? orderId = null,
+            string? origClientOrderId = null, string? newClientOrderId = null, long? receiveWindow = null,
+            CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
             if (!orderId.HasValue && string.IsNullOrEmpty(origClientOrderId))
-                throw new ArgumentException("Either orderId or origClientOrderId must be sent");
-
-            var parameters = new Dictionary<string, object>
             {
-                { "symbol", symbol }
-            };
+                throw new ArgumentException("Either orderId or origClientOrderId must be sent");
+            }
+
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
             parameters.AddOptionalParameter("orderId", orderId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("origClientOrderId", origClientOrderId);
             parameters.AddOptionalParameter("newClientOrderId", newClientOrderId);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            var result = await _baseClient.SendRequestInternal<BinanceOrderBase>(_baseClient.GetUrl(cancelOrderEndpoint, api, signedVersion), HttpMethod.Delete, ct, parameters, true).ConfigureAwait(false);
+            WebCallResult<BinanceOrderBase>? result = await _baseClient
+                .SendRequestInternal<BinanceOrderBase>(_baseClient.GetUrl(cancelOrderEndpoint, api, signedVersion),
+                    HttpMethod.Delete, ct, parameters, true).ConfigureAwait(false);
             if (result)
-                    _baseClient.InvokeOrderCanceled(new OrderId() { SourceObject = result.Data, Id = result.Data.Id.ToString(CultureInfo.InvariantCulture) });
+            {
+                _baseClient.InvokeOrderCanceled(new OrderId
+                {
+                    SourceObject = result.Data, Id = result.Data.Id.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
             return result;
         }
 
@@ -214,38 +233,46 @@ namespace Binance.Net.Clients.SpotApi
         #region Cancel all Open Orders on a Symbol
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceOrderBase>>> CancelAllOrdersAsync(string symbol, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceOrderBase>>> CancelAllOrdersAsync(string symbol,
+            long? receiveWindow = null, CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
 
-            var parameters = new Dictionary<string, object>
-            {
-                { "symbol", symbol }
-            };
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceOrderBase>>(_baseClient.GetUrl(cancelAllOpenOrderEndpoint, api, signedVersion), HttpMethod.Delete, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceOrderBase>>(
+                    _baseClient.GetUrl(cancelAllOpenOrderEndpoint, api, signedVersion), HttpMethod.Delete, ct,
+                    parameters, true).ConfigureAwait(false);
         }
+
         #endregion
 
         #region Query Order
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceOrder>> GetOrderAsync(string symbol, long? orderId = null, string? origClientOrderId = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceOrder>> GetOrderAsync(string symbol, long? orderId = null,
+            string? origClientOrderId = null, long? receiveWindow = null, CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
             if (orderId == null && origClientOrderId == null)
-                throw new ArgumentException("Either orderId or origClientOrderId must be sent");
-
-            var parameters = new Dictionary<string, object>
             {
-                { "symbol", symbol }
-            };
+                throw new ArgumentException("Either orderId or origClientOrderId must be sent");
+            }
+
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
             parameters.AddOptionalParameter("orderId", orderId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("origClientOrderId", origClientOrderId);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceOrder>(_baseClient.GetUrl(queryOrderEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters, true, weight: 2).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceOrder>(_baseClient.GetUrl(queryOrderEndpoint, api, signedVersion),
+                    HttpMethod.Get, ct, parameters, true, weight: 2).ConfigureAwait(false);
         }
 
         #endregion
@@ -253,38 +280,48 @@ namespace Binance.Net.Clients.SpotApi
         #region Current Open Orders
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceOrder>>> GetOpenOrdersAsync(string? symbol = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceOrder>>> GetOpenOrdersAsync(string? symbol = null,
+            int? receiveWindow = null, CancellationToken ct = default)
         {
             symbol?.ValidateBinanceSymbol();
 
-            var parameters = new Dictionary<string, object>();
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("symbol", symbol);
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceOrder>>(_baseClient.GetUrl(openOrdersEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters, true, weight: symbol == null ? 40 : 3).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceOrder>>(
+                    _baseClient.GetUrl(openOrdersEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters, true,
+                    weight: symbol == null ? 40 : 3).ConfigureAwait(false);
         }
 
         #endregion
 
-        #region All Orders 
+        #region All Orders
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceOrder>>> GetOrdersAsync(string symbol, long? orderId = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceOrder>>> GetOrdersAsync(string symbol, long? orderId = null,
+            DateTime? startTime = null, DateTime? endTime = null, int? limit = null, int? receiveWindow = null,
+            CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
             limit?.ValidateIntBetween(nameof(limit), 1, 1000);
 
-            var parameters = new Dictionary<string, object>
-            {
-                { "symbol", symbol }
-            };
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
             parameters.AddOptionalParameter("orderId", orderId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceOrder>>(_baseClient.GetUrl(allOrdersEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceOrder>>(
+                    _baseClient.GetUrl(allOrdersEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters, true,
+                    weight: 10).ConfigureAwait(false);
         }
 
         #endregion
@@ -293,7 +330,7 @@ namespace Binance.Net.Clients.SpotApi
 
         /// <inheritdoc />
         public async Task<WebCallResult<BinanceOrderOcoList>> PlaceOcoOrderAsync(string symbol,
-            Enums.OrderSide side,
+            OrderSide side,
             decimal quantity,
             decimal price,
             decimal stopPrice,
@@ -309,7 +346,8 @@ namespace Binance.Net.Clients.SpotApi
         {
             symbol.ValidateBinanceSymbol();
 
-            var rulesCheck = await _baseClient.CheckTradeRules(symbol, quantity, price, stopPrice, null, ct).ConfigureAwait(false);
+            BinanceTradeRuleResult? rulesCheck = await _baseClient
+                .CheckTradeRules(symbol, quantity, price, stopPrice, null, ct).ConfigureAwait(false);
             if (!rulesCheck.Passed)
             {
                 _log.Write(LogLevel.Warning, rulesCheck.ErrorMessage!);
@@ -320,7 +358,7 @@ namespace Binance.Net.Clients.SpotApi
             price = rulesCheck.Price!.Value;
             stopPrice = rulesCheck.StopPrice!.Value;
 
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
                 { "symbol", symbol },
                 { "side", JsonConvert.SerializeObject(side, new OrderSideConverter(false)) },
@@ -332,36 +370,51 @@ namespace Binance.Net.Clients.SpotApi
             parameters.AddOptionalParameter("listClientOrderId", listClientOrderId);
             parameters.AddOptionalParameter("limitClientOrderId", limitClientOrderId);
             parameters.AddOptionalParameter("stopClientOrderId", stopClientOrderId);
-            parameters.AddOptionalParameter("limitIcebergQty", limitIcebergQuantity?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("stopIcebergQty", stopIcebergQuantity?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("stopLimitTimeInForce", stopLimitTimeInForce == null ? null : JsonConvert.SerializeObject(stopLimitTimeInForce, new TimeInForceConverter(false)));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("limitIcebergQty",
+                limitIcebergQuantity?.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("stopIcebergQty",
+                stopIcebergQuantity?.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("stopLimitTimeInForce",
+                stopLimitTimeInForce == null
+                    ? null
+                    : JsonConvert.SerializeObject(stopLimitTimeInForce, new TimeInForceConverter(false)));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceOrderOcoList>(_baseClient.GetUrl(newOcoOrderEndpoint, api, signedVersion), HttpMethod.Post, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceOrderOcoList>(_baseClient.GetUrl(newOcoOrderEndpoint, api, signedVersion),
+                    HttpMethod.Post, ct, parameters, true).ConfigureAwait(false);
         }
 
         #endregion
 
-        #region Cancel OCO 
+        #region Cancel OCO
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceOrderOcoList>> CancelOcoOrderAsync(string symbol, long? orderListId = null, string? listClientOrderId = null, string? newClientOrderId = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceOrderOcoList>> CancelOcoOrderAsync(string symbol,
+            long? orderListId = null, string? listClientOrderId = null, string? newClientOrderId = null,
+            long? receiveWindow = null, CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
 
             if (!orderListId.HasValue && string.IsNullOrEmpty(listClientOrderId))
-                throw new ArgumentException("Either orderListId or listClientOrderId must be sent");
-
-            var parameters = new Dictionary<string, object>
             {
-                { "symbol", symbol }
-            };
+                throw new ArgumentException("Either orderListId or listClientOrderId must be sent");
+            }
+
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
             parameters.AddOptionalParameter("orderListId", orderListId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("listClientOrderId", listClientOrderId);
             parameters.AddOptionalParameter("newClientOrderId", newClientOrderId);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceOrderOcoList>(_baseClient.GetUrl(cancelOcoOrderEndpoint, api, signedVersion), HttpMethod.Delete, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceOrderOcoList>(
+                    _baseClient.GetUrl(cancelOcoOrderEndpoint, api, signedVersion), HttpMethod.Delete, ct, parameters,
+                    true).ConfigureAwait(false);
         }
 
         #endregion
@@ -369,17 +422,24 @@ namespace Binance.Net.Clients.SpotApi
         #region Query OCO
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceOrderOcoList>> GetOcoOrderAsync(long? orderListId = null, string? origClientOrderId = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceOrderOcoList>> GetOcoOrderAsync(long? orderListId = null,
+            string? origClientOrderId = null, long? receiveWindow = null, CancellationToken ct = default)
         {
             if (orderListId == null && origClientOrderId == null)
+            {
                 throw new ArgumentException("Either orderListId or origClientOrderId must be sent");
+            }
 
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("orderListId", orderListId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("origClientOrderId", origClientOrderId);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceOrderOcoList>(_baseClient.GetUrl(getOcoOrderEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters, true, weight: 2).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceOrderOcoList>(_baseClient.GetUrl(getOcoOrderEndpoint, api, signedVersion),
+                    HttpMethod.Get, ct, parameters, true, weight: 2).ConfigureAwait(false);
         }
 
         #endregion
@@ -387,21 +447,30 @@ namespace Binance.Net.Clients.SpotApi
         #region Query all OCO
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceOrderOcoList>>> GetOcoOrdersAsync(long? fromId = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceOrderOcoList>>> GetOcoOrdersAsync(long? fromId = null,
+            DateTime? startTime = null, DateTime? endTime = null, int? limit = null, long? receiveWindow = null,
+            CancellationToken ct = default)
         {
             if (fromId != null && (startTime != null || endTime != null))
+            {
                 throw new ArgumentException("Start/end time can only be provided without fromId parameter");
+            }
 
             limit?.ValidateIntBetween(nameof(limit), 1, 1000);
 
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("fromId", fromId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceOrderOcoList>>(_baseClient.GetUrl(getAllOcoOrderEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceOrderOcoList>>(
+                    _baseClient.GetUrl(getAllOcoOrderEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters,
+                    true, weight: 10).ConfigureAwait(false);
         }
 
         #endregion
@@ -409,12 +478,18 @@ namespace Binance.Net.Clients.SpotApi
         #region Query Open OCO
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceOrderOcoList>>> GetOpenOcoOrdersAsync(long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceOrderOcoList>>> GetOpenOcoOrdersAsync(
+            long? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>();
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceOrderOcoList>>(_baseClient.GetUrl(getOpenOcoOrderEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters, true, weight: 3).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceOrderOcoList>>(
+                    _baseClient.GetUrl(getOpenOcoOrderEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters,
+                    true, weight: 3).ConfigureAwait(false);
         }
 
         #endregion
@@ -422,31 +497,36 @@ namespace Binance.Net.Clients.SpotApi
         #region Get user trades
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceTrade>>> GetUserTradesAsync(string symbol, long? orderId = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, long? fromId = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceTrade>>> GetUserTradesAsync(string symbol,
+            long? orderId = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null,
+            long? fromId = null, long? receiveWindow = null, CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
             limit?.ValidateIntBetween(nameof(limit), 1, 1000);
 
-            var parameters = new Dictionary<string, object>
-            {
-                { "symbol", symbol }
-            };
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
             parameters.AddOptionalParameter("orderId", orderId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("fromId", fromId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceTrade>>(_baseClient.GetUrl(myTradesEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceTrade>>(
+                    _baseClient.GetUrl(myTradesEndpoint, api, signedVersion), HttpMethod.Get, ct, parameters, true,
+                    weight: 10).ConfigureAwait(false);
         }
+
         #endregion
 
         #region Margin Account New Order
 
         /// <inheritdoc />
         public async Task<WebCallResult<BinancePlacedOrder>> PlaceMarginOrderAsync(string symbol,
-            Enums.OrderSide side,
+            OrderSide side,
             SpotOrderType type,
             decimal? quantity = null,
             decimal? quoteQuantity = null,
@@ -461,7 +541,8 @@ namespace Binance.Net.Clients.SpotApi
             int? receiveWindow = null,
             CancellationToken ct = default)
         {
-            var result = await _baseClient.PlaceOrderInternal(_baseClient.GetUrl(newMarginOrderEndpoint, marginApi, marginVersion),
+            WebCallResult<BinancePlacedOrder>? result = await _baseClient.PlaceOrderInternal(
+                _baseClient.GetUrl(newMarginOrderEndpoint, marginApi, marginVersion),
                 symbol,
                 side,
                 type,
@@ -476,11 +557,15 @@ namespace Binance.Net.Clients.SpotApi
                 isIsolated,
                 orderResponseType,
                 receiveWindow,
-                weight: 6,
+                6,
                 ct).ConfigureAwait(false);
 
             if (result)
-                _baseClient.InvokeOrderPlaced(new OrderId { Id = result.Data.Id.ToString(CultureInfo.InvariantCulture) });
+            {
+                _baseClient.InvokeOrderPlaced(
+                    new OrderId { Id = result.Data.Id.ToString(CultureInfo.InvariantCulture) });
+            }
+
             return result;
         }
 
@@ -489,26 +574,38 @@ namespace Binance.Net.Clients.SpotApi
         #region Margin Account Cancel Order
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceOrderBase>> CancelMarginOrderAsync(string symbol, long? orderId = null, string? origClientOrderId = null, string? newClientOrderId = null, bool? isIsolated = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceOrderBase>> CancelMarginOrderAsync(string symbol, long? orderId = null,
+            string? origClientOrderId = null, string? newClientOrderId = null, bool? isIsolated = null,
+            long? receiveWindow = null, CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
 
             if (!orderId.HasValue && string.IsNullOrEmpty(origClientOrderId))
-                throw new ArgumentException("Either orderId or origClientOrderId must be sent");
-
-            var parameters = new Dictionary<string, object>
             {
-                { "symbol", symbol }
-            };
+                throw new ArgumentException("Either orderId or origClientOrderId must be sent");
+            }
+
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
             parameters.AddOptionalParameter("orderId", orderId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("origClientOrderId", origClientOrderId);
             parameters.AddOptionalParameter("isIsolated", isIsolated);
             parameters.AddOptionalParameter("newClientOrderId", newClientOrderId);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            var result = await _baseClient.SendRequestInternal<BinanceOrderBase>(_baseClient.GetUrl(cancelMarginOrderEndpoint, marginApi, marginVersion), HttpMethod.Delete, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            WebCallResult<BinanceOrderBase>? result = await _baseClient
+                .SendRequestInternal<BinanceOrderBase>(
+                    _baseClient.GetUrl(cancelMarginOrderEndpoint, marginApi, marginVersion), HttpMethod.Delete, ct,
+                    parameters, true, weight: 10).ConfigureAwait(false);
             if (result)
-                _baseClient.InvokeOrderCanceled(new OrderId { Id = result.Data.Id.ToString(CultureInfo.InvariantCulture) });
+            {
+                _baseClient.InvokeOrderCanceled(new OrderId
+                {
+                    Id = result.Data.Id.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
             return result;
         }
 
@@ -517,18 +614,21 @@ namespace Binance.Net.Clients.SpotApi
         #region Margin Account Cancel All Open Orders
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceOrderBase>>> CancelAllMarginOrdersAsync(string symbol, bool? isIsolated = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceOrderBase>>> CancelAllMarginOrdersAsync(string symbol,
+            bool? isIsolated = null, long? receiveWindow = null, CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
 
-            var parameters = new Dictionary<string, object>
-            {
-                { "symbol", symbol }
-            };
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
             parameters.AddOptionalParameter("isIsolated", isIsolated);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceOrderBase>>(_baseClient.GetUrl(cancelOpenMarginOrdersEndpoint, marginApi, marginVersion), HttpMethod.Delete, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceOrderBase>>(
+                    _baseClient.GetUrl(cancelOpenMarginOrdersEndpoint, marginApi, marginVersion), HttpMethod.Delete, ct,
+                    parameters, true).ConfigureAwait(false);
         }
 
         #endregion
@@ -536,22 +636,28 @@ namespace Binance.Net.Clients.SpotApi
         #region Query Margin Account's Order
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceOrder>> GetMarginOrderAsync(string symbol, long? orderId = null, string? origClientOrderId = null, bool? isIsolated = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceOrder>> GetMarginOrderAsync(string symbol, long? orderId = null,
+            string? origClientOrderId = null, bool? isIsolated = null, long? receiveWindow = null,
+            CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
             if (orderId == null && origClientOrderId == null)
-                throw new ArgumentException("Either orderId or origClientOrderId should be provided");
-
-            var parameters = new Dictionary<string, object>
             {
-                { "symbol", symbol }
-            };
+                throw new ArgumentException("Either orderId or origClientOrderId should be provided");
+            }
+
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
             parameters.AddOptionalParameter("isIsolated", isIsolated);
             parameters.AddOptionalParameter("orderId", orderId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("origClientOrderId", origClientOrderId);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceOrder>(_baseClient.GetUrl(queryMarginOrderEndpoint, marginApi, marginVersion), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceOrder>(
+                    _baseClient.GetUrl(queryMarginOrderEndpoint, marginApi, marginVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 10).ConfigureAwait(false);
         }
 
         #endregion
@@ -559,18 +665,26 @@ namespace Binance.Net.Clients.SpotApi
         #region Query Margin Account's Open Order
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceOrder>>> GetOpenMarginOrdersAsync(string? symbol = null, bool? isIsolated = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceOrder>>> GetOpenMarginOrdersAsync(string? symbol = null,
+            bool? isIsolated = null, int? receiveWindow = null, CancellationToken ct = default)
         {
             symbol?.ValidateBinanceSymbol();
             if (isIsolated == true && symbol == null)
+            {
                 throw new ArgumentException("Symbol must be provided for isolated margin");
+            }
 
-            var parameters = new Dictionary<string, object>();
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("symbol", symbol);
             parameters.AddOptionalParameter("isIsolated", isIsolated);
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceOrder>>(_baseClient.GetUrl(openMarginOrdersEndpoint, marginApi, marginVersion), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceOrder>>(
+                    _baseClient.GetUrl(openMarginOrdersEndpoint, marginApi, marginVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 10).ConfigureAwait(false);
         }
 
         #endregion
@@ -578,46 +692,54 @@ namespace Binance.Net.Clients.SpotApi
         #region Query Margin Account's All Order
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceOrder>>> GetMarginOrdersAsync(string symbol, long? orderId = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, bool? isIsolated = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceOrder>>> GetMarginOrdersAsync(string symbol,
+            long? orderId = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null,
+            bool? isIsolated = null, int? receiveWindow = null, CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
             limit?.ValidateIntBetween(nameof(limit), 1, 500);
 
-            var parameters = new Dictionary<string, object>
-            {
-                { "symbol", symbol }
-            };
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
             parameters.AddOptionalParameter("orderId", orderId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("isIsolated", isIsolated);
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceOrder>>(_baseClient.GetUrl(allMarginOrdersEndpoint, marginApi, marginVersion), HttpMethod.Get, ct, parameters, true, weight: 200).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceOrder>>(
+                    _baseClient.GetUrl(allMarginOrdersEndpoint, marginApi, marginVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 200).ConfigureAwait(false);
         }
+
         #endregion
 
         #region Query Margin Account's Trade List
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceTrade>>> GetMarginUserTradesAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, long? fromId = null, bool? isIsolated = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceTrade>>> GetMarginUserTradesAsync(string symbol,
+            DateTime? startTime = null, DateTime? endTime = null, int? limit = null, long? fromId = null,
+            bool? isIsolated = null, long? receiveWindow = null, CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
             limit?.ValidateIntBetween(nameof(limit), 1, 1000);
 
-            var parameters = new Dictionary<string, object>
-            {
-                { "symbol", symbol }
-            };
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("isIsolated", isIsolated);
             parameters.AddOptionalParameter("fromId", fromId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceTrade>>(_baseClient.GetUrl(myMarginTradesEndpoint, "sapi", "1"), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceTrade>>(_baseClient.GetUrl(myMarginTradesEndpoint, "sapi", "1"),
+                    HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
         }
 
         #endregion
@@ -626,7 +748,7 @@ namespace Binance.Net.Clients.SpotApi
 
         /// <inheritdoc />
         public async Task<WebCallResult<BinanceMarginOrderOcoList>> PlaceMarginOCOOrderAsync(string symbol,
-            Enums.OrderSide side,
+            OrderSide side,
             decimal price,
             decimal stopPrice,
             decimal quantity,
@@ -644,7 +766,8 @@ namespace Binance.Net.Clients.SpotApi
             CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
-            var rulesCheck = await _baseClient.CheckTradeRules(symbol, quantity, price, stopPrice, null, ct).ConfigureAwait(false);
+            BinanceTradeRuleResult? rulesCheck = await _baseClient
+                .CheckTradeRules(symbol, quantity, price, stopPrice, null, ct).ConfigureAwait(false);
             if (!rulesCheck.Passed)
             {
                 _log.Write(LogLevel.Warning, rulesCheck.ErrorMessage!);
@@ -655,7 +778,7 @@ namespace Binance.Net.Clients.SpotApi
             price = rulesCheck.Price!.Value;
             stopPrice = rulesCheck.StopPrice!.Value;
 
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
                 { "symbol", symbol },
                 { "side", JsonConvert.SerializeObject(side, new OrderSideConverter(false)) },
@@ -665,42 +788,64 @@ namespace Binance.Net.Clients.SpotApi
             };
             parameters.AddOptionalParameter("stopLimitPrice", stopLimitPrice?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("isIsolated", isIsolated?.ToString());
-            parameters.AddOptionalParameter("sideEffectType", sideEffectType == null ? null : JsonConvert.SerializeObject(sideEffectType, new SideEffectTypeConverter(false)));
+            parameters.AddOptionalParameter("sideEffectType",
+                sideEffectType == null
+                    ? null
+                    : JsonConvert.SerializeObject(sideEffectType, new SideEffectTypeConverter(false)));
             parameters.AddOptionalParameter("listClientOrderId", listClientOrderId);
             parameters.AddOptionalParameter("limitClientOrderId", limitClientOrderId);
             parameters.AddOptionalParameter("stopClientOrderId", stopClientOrderId);
-            parameters.AddOptionalParameter("limitIcebergQty", limitIcebergQuantity?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("newOrderRespType", orderResponseType == null ? null : JsonConvert.SerializeObject(orderResponseType, new OrderResponseTypeConverter(false)));
-            parameters.AddOptionalParameter("stopIcebergQty", stopIcebergQuantity?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("stopLimitTimeInForce", stopLimitTimeInForce == null ? null : JsonConvert.SerializeObject(stopLimitTimeInForce, new TimeInForceConverter(false)));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("limitIcebergQty",
+                limitIcebergQuantity?.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("newOrderRespType",
+                orderResponseType == null
+                    ? null
+                    : JsonConvert.SerializeObject(orderResponseType, new OrderResponseTypeConverter(false)));
+            parameters.AddOptionalParameter("stopIcebergQty",
+                stopIcebergQuantity?.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("stopLimitTimeInForce",
+                stopLimitTimeInForce == null
+                    ? null
+                    : JsonConvert.SerializeObject(stopLimitTimeInForce, new TimeInForceConverter(false)));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceMarginOrderOcoList>(_baseClient.GetUrl(newMarginOCOOrderEndpoint, marginApi, marginVersion), HttpMethod.Post, ct, parameters, true, weight: 6).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceMarginOrderOcoList>(
+                    _baseClient.GetUrl(newMarginOCOOrderEndpoint, marginApi, marginVersion), HttpMethod.Post, ct,
+                    parameters, true, weight: 6).ConfigureAwait(false);
         }
 
         #endregion
 
-        #region Cancel OCO 
+        #region Cancel OCO
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceMarginOrderOcoList>> CancelMarginOcoOrderAsync(string symbol, bool? isIsolated = null, long? orderListId = null, string? listClientOrderId = null, string? newClientOrderId = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceMarginOrderOcoList>> CancelMarginOcoOrderAsync(string symbol,
+            bool? isIsolated = null, long? orderListId = null, string? listClientOrderId = null,
+            string? newClientOrderId = null, long? receiveWindow = null, CancellationToken ct = default)
         {
             symbol.ValidateBinanceSymbol();
 
             if (!orderListId.HasValue && string.IsNullOrEmpty(listClientOrderId))
-                throw new ArgumentException("Either orderListId or listClientOrderId must be sent");
-
-            var parameters = new Dictionary<string, object>
             {
-                { "symbol", symbol }
-            };
+                throw new ArgumentException("Either orderListId or listClientOrderId must be sent");
+            }
+
+            Dictionary<string, object> parameters = new Dictionary<string, object> { { "symbol", symbol } };
             parameters.AddOptionalParameter("isIsolated", isIsolated?.ToString());
             parameters.AddOptionalParameter("orderListId", orderListId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("listClientOrderId", listClientOrderId);
             parameters.AddOptionalParameter("newClientOrderId", newClientOrderId);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceMarginOrderOcoList>(_baseClient.GetUrl(cancelMarginOCOOrderEndpoint, marginApi, marginVersion), HttpMethod.Delete, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceMarginOrderOcoList>(
+                    _baseClient.GetUrl(cancelMarginOCOOrderEndpoint, marginApi, marginVersion), HttpMethod.Delete, ct,
+                    parameters, true).ConfigureAwait(false);
         }
 
         #endregion
@@ -708,19 +853,28 @@ namespace Binance.Net.Clients.SpotApi
         #region Query OCO
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceMarginOrderOcoList>> GetMarginOcoOrderAsync(string? symbol = null, bool? isIsolated = null, long? orderListId = null, string? origClientOrderId = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceMarginOrderOcoList>> GetMarginOcoOrderAsync(string? symbol = null,
+            bool? isIsolated = null, long? orderListId = null, string? origClientOrderId = null,
+            long? receiveWindow = null, CancellationToken ct = default)
         {
             if (orderListId == null && origClientOrderId == null)
+            {
                 throw new ArgumentException("Either orderListId or origClientOrderId must be sent");
+            }
 
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("symbol", symbol);
             parameters.AddOptionalParameter("isIsolated", isIsolated.ToString());
             parameters.AddOptionalParameter("orderListId", orderListId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("origClientOrderId", origClientOrderId);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceMarginOrderOcoList>(_baseClient.GetUrl(getMarginOCOOrderEndpoint, marginApi, marginVersion), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceMarginOrderOcoList>(
+                    _baseClient.GetUrl(getMarginOCOOrderEndpoint, marginApi, marginVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 10).ConfigureAwait(false);
         }
 
         #endregion
@@ -728,23 +882,32 @@ namespace Binance.Net.Clients.SpotApi
         #region Query all OCO
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceMarginOrderOcoList>>> GetMarginOcoOrdersAsync(string? symbol = null, bool? isIsolated = null, long? fromId = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceMarginOrderOcoList>>> GetMarginOcoOrdersAsync(
+            string? symbol = null, bool? isIsolated = null, long? fromId = null, DateTime? startTime = null,
+            DateTime? endTime = null, int? limit = null, long? receiveWindow = null, CancellationToken ct = default)
         {
             if (fromId != null && (startTime != null || endTime != null))
+            {
                 throw new ArgumentException("Start/end time can only be provided without fromId parameter");
+            }
 
             limit?.ValidateIntBetween(nameof(limit), 1, 1000);
 
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("symbol", symbol);
             parameters.AddOptionalParameter("isIsolated", isIsolated?.ToString());
             parameters.AddOptionalParameter("fromId", fromId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceMarginOrderOcoList>>(_baseClient.GetUrl(allMarginOCOOrderEndpoint, marginApi, marginVersion), HttpMethod.Get, ct, parameters, true, weight: 200).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceMarginOrderOcoList>>(
+                    _baseClient.GetUrl(allMarginOCOOrderEndpoint, marginApi, marginVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 200).ConfigureAwait(false);
         }
 
         #endregion
@@ -752,14 +915,116 @@ namespace Binance.Net.Clients.SpotApi
         #region Query Open OCO
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceMarginOrderOcoList>>> GetMarginOpenOcoOrdersAsync(string? symbol = null, bool? isIsolated = null, long? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceMarginOrderOcoList>>> GetMarginOpenOcoOrdersAsync(
+            string? symbol = null, bool? isIsolated = null, long? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("symbol", symbol);
             parameters.AddOptionalParameter("isIsolated", isIsolated?.ToString());
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceMarginOrderOcoList>>(_baseClient.GetUrl(openMarginOCOOrderEndpoint, marginApi, marginVersion), HttpMethod.Get, ct, parameters, true, weight: 10).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceMarginOrderOcoList>>(
+                    _baseClient.GetUrl(openMarginOCOOrderEndpoint, marginApi, marginVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 10).ConfigureAwait(false);
+        }
+
+        #endregion
+
+        #region C2C
+
+        /// <inheritdoc />
+        public async Task<WebCallResult<IEnumerable<BinanceC2CUserTrade>>> GetC2CTradeHistoryAsync(OrderSide side,
+            DateTime? startTime = null, DateTime? endTime = null, int? page = null, int? pageSize = null,
+            long? receiveWindow = null, CancellationToken ct = default)
+        {
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            parameters.AddOptionalParameter("tradeType",
+                JsonConvert.SerializeObject(side, new OrderSideConverter(false)));
+            parameters.AddOptionalParameter("startTimestamp", DateTimeConverter.ConvertToMilliseconds(startTime));
+            parameters.AddOptionalParameter("endTimestamp", DateTimeConverter.ConvertToMilliseconds(endTime));
+            parameters.AddOptionalParameter("page", page);
+            parameters.AddOptionalParameter("rows", pageSize);
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+
+            WebCallResult<BinanceResult<IEnumerable<BinanceC2CUserTrade>>>? result = await _baseClient
+                .SendRequestInternal<BinanceResult<IEnumerable<BinanceC2CUserTrade>>>(
+                    _baseClient.GetUrl(c2cTradeHistoryEndpoint, marginApi, marginVersion), HttpMethod.Get, ct,
+                    parameters, true).ConfigureAwait(false);
+            if (!result.Success)
+            {
+                return result.As<IEnumerable<BinanceC2CUserTrade>>(default);
+            }
+
+            if (result.Data?.Code != 0)
+            {
+                return result.AsError<IEnumerable<BinanceC2CUserTrade>>(new ServerError(result.Data!.Code,
+                    result.Data!.Message));
+            }
+
+            return result.As(result.Data.Data);
+        }
+
+        #endregion
+
+        #region Pay
+
+        /// <inheritdoc />
+        public async Task<WebCallResult<IEnumerable<BinancePayTrade>>> GetPayTradeHistoryAsync(
+            DateTime? startTime = null, DateTime? endTime = null, int? limit = null, long? receiveWindow = null,
+            CancellationToken ct = default)
+        {
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            parameters.AddOptionalParameter("startTimestamp", DateTimeConverter.ConvertToMilliseconds(startTime));
+            parameters.AddOptionalParameter("endTimestamp", DateTimeConverter.ConvertToMilliseconds(endTime));
+            parameters.AddOptionalParameter("limit", limit);
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+
+            WebCallResult<BinanceResult<IEnumerable<BinancePayTrade>>>? result = await _baseClient
+                .SendRequestInternal<BinanceResult<IEnumerable<BinancePayTrade>>>(
+                    _baseClient.GetUrl(payTradeHistoryEndpoint, marginApi, marginVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 3000).ConfigureAwait(false);
+            if (!result.Success)
+            {
+                return result.As<IEnumerable<BinancePayTrade>>(default);
+            }
+
+            if (result.Data?.Code != 0)
+            {
+                return result.AsError<IEnumerable<BinancePayTrade>>(new ServerError(result.Data!.Code,
+                    result.Data!.Message));
+            }
+
+            return result.As(result.Data.Data);
+        }
+
+        #endregion
+
+        #region Convert
+
+        /// <inheritdoc />
+        public async Task<WebCallResult<BinanceListResult<BinanceConvertTrade>>> GetConvertTradeHistoryAsync(
+            DateTime startTime, DateTime endTime, int? limit = null, long? receiveWindow = null,
+            CancellationToken ct = default)
+        {
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            parameters.AddParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
+            parameters.AddParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
+            parameters.AddOptionalParameter("limit", limit);
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+
+            return await _baseClient
+                .SendRequestInternal<BinanceListResult<BinanceConvertTrade>>(
+                    _baseClient.GetUrl(convertTradeHistoryEndpoint, marginApi, marginVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 3000).ConfigureAwait(false);
         }
 
         #endregion
@@ -769,16 +1034,21 @@ namespace Binance.Net.Clients.SpotApi
         #region Leveraged tokens subscribe
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceBlvtSubscribeResult>> SubscribeLeveragedTokenAsync(string tokenName, decimal cost, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceBlvtSubscribeResult>> SubscribeLeveragedTokenAsync(string tokenName,
+            decimal cost, int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                { "tokenName", tokenName },
-                { "cost", cost.ToString(CultureInfo.InvariantCulture) }
+                { "tokenName", tokenName }, { "cost", cost.ToString(CultureInfo.InvariantCulture) }
             };
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceBlvtSubscribeResult>(_baseClient.GetUrl(blvtSubscribeEndpoint, BlvtApi, blvtVersion), HttpMethod.Post, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceBlvtSubscribeResult>(
+                    _baseClient.GetUrl(blvtSubscribeEndpoint, BlvtApi, blvtVersion), HttpMethod.Post, ct, parameters,
+                    true).ConfigureAwait(false);
         }
 
         #endregion
@@ -786,36 +1056,49 @@ namespace Binance.Net.Clients.SpotApi
         #region Get Leveraged tokens subscription records
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanecBlvtSubscription>>> GetLeveragedTokensSubscriptionRecordsAsync(string? tokenName = null, long? id = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanecBlvtSubscription>>>
+            GetLeveragedTokensSubscriptionRecordsAsync(string? tokenName = null, long? id = null,
+                DateTime? startTime = null, DateTime? endTime = null, int? limit = null, int? receiveWindow = null,
+                CancellationToken ct = default)
         {
             limit?.ValidateIntBetween(nameof(limit), 1, 1000);
 
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("tokenName", tokenName);
             parameters.AddOptionalParameter("id", id?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanecBlvtSubscription>>(_baseClient.GetUrl(blvtSubscriptionRecordsEndpoint, BlvtApi, blvtVersion), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanecBlvtSubscription>>(
+                    _baseClient.GetUrl(blvtSubscriptionRecordsEndpoint, BlvtApi, blvtVersion), HttpMethod.Get, ct,
+                    parameters, true).ConfigureAwait(false);
         }
 
         #endregion
 
-        #region Leveraged tokens Redeem 
+        #region Leveraged tokens Redeem
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceBlvtRedeemResult>> RedeemLeveragedTokenAsync(string tokenName, decimal quantity, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceBlvtRedeemResult>> RedeemLeveragedTokenAsync(string tokenName,
+            decimal quantity, int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                { "tokenName", tokenName },
-                { "amount", quantity.ToString(CultureInfo.InvariantCulture) }
+                { "tokenName", tokenName }, { "amount", quantity.ToString(CultureInfo.InvariantCulture) }
             };
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceBlvtRedeemResult>(_baseClient.GetUrl(blvtRedeemEndpoint, BlvtApi, blvtVersion), HttpMethod.Post, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceBlvtRedeemResult>(
+                    _baseClient.GetUrl(blvtRedeemEndpoint, BlvtApi, blvtVersion), HttpMethod.Post, ct, parameters, true)
+                .ConfigureAwait(false);
         }
 
         #endregion
@@ -823,19 +1106,26 @@ namespace Binance.Net.Clients.SpotApi
         #region Get Leveraged tokens redemption records
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceBlvtRedemption>>> GetLeveragedTokensRedemptionRecordsAsync(string? tokenName = null, long? id = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceBlvtRedemption>>> GetLeveragedTokensRedemptionRecordsAsync(
+            string? tokenName = null, long? id = null, DateTime? startTime = null, DateTime? endTime = null,
+            int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
         {
             limit?.ValidateIntBetween(nameof(limit), 1, 1000);
 
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("tokenName", tokenName);
             parameters.AddOptionalParameter("id", id?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceBlvtRedemption>>(_baseClient.GetUrl(blvtRedeemRecordsEndpoint, BlvtApi, blvtVersion), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceBlvtRedemption>>(
+                    _baseClient.GetUrl(blvtRedeemRecordsEndpoint, BlvtApi, blvtVersion), HttpMethod.Get, ct, parameters,
+                    true).ConfigureAwait(false);
         }
 
         #endregion
@@ -847,18 +1137,25 @@ namespace Binance.Net.Clients.SpotApi
         #region Add liquid pool liquidity
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceBSwapOperationResult>> AddToLiquidityPoolAsync(int poolId, string asset, decimal quantity, LiquidityType? type = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceBSwapOperationResult>> AddToLiquidityPoolAsync(int poolId, string asset,
+            decimal quantity, LiquidityType? type = null, int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                {"poolId", poolId},
-                {"asset", asset},
-                {"quantity", quantity.ToString(CultureInfo.InvariantCulture)}
+                { "poolId", poolId },
+                { "asset", asset },
+                { "quantity", quantity.ToString(CultureInfo.InvariantCulture) }
             };
-            parameters.AddOptionalParameter("type", type == null ? null : JsonConvert.SerializeObject(type.Value, new LiquidityTypeConverter(false)));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("type",
+                type == null ? null : JsonConvert.SerializeObject(type.Value, new LiquidityTypeConverter(false)));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceBSwapOperationResult>(_baseClient.GetUrl(bSwapAddLiquidityEndpoint, bSwapApi, bSwapVersion), HttpMethod.Post, ct, parameters, true, weight: 1000).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceBSwapOperationResult>(
+                    _baseClient.GetUrl(bSwapAddLiquidityEndpoint, bSwapApi, bSwapVersion), HttpMethod.Post, ct,
+                    parameters, true, weight: 1000).ConfigureAwait(false);
         }
 
         #endregion
@@ -866,18 +1163,25 @@ namespace Binance.Net.Clients.SpotApi
         #region Remove liquid pool liquidity
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceBSwapOperationResult>> RemoveFromLiquidityPoolAsync(int poolId, string asset, LiquidityType type, decimal shareQuantity, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceBSwapOperationResult>> RemoveFromLiquidityPoolAsync(int poolId,
+            string asset, LiquidityType type, decimal shareQuantity, int? receiveWindow = null,
+            CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                {"poolId", poolId},
-                {"asset", asset},
-                {"type", JsonConvert.SerializeObject(type, new LiquidityTypeConverter(false))},
-                {"shareAmount", shareQuantity.ToString(CultureInfo.InvariantCulture)}
+                { "poolId", poolId },
+                { "asset", asset },
+                { "type", JsonConvert.SerializeObject(type, new LiquidityTypeConverter(false)) },
+                { "shareAmount", shareQuantity.ToString(CultureInfo.InvariantCulture) }
             };
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceBSwapOperationResult>(_baseClient.GetUrl(bSwapRemoveLiquidityEndpoint, bSwapApi, bSwapVersion), HttpMethod.Post, ct, parameters, true, weight: 1000).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceBSwapOperationResult>(
+                    _baseClient.GetUrl(bSwapRemoveLiquidityEndpoint, bSwapApi, bSwapVersion), HttpMethod.Post, ct,
+                    parameters, true, weight: 1000).ConfigureAwait(false);
         }
 
         #endregion
@@ -885,20 +1189,28 @@ namespace Binance.Net.Clients.SpotApi
         #region Get liquid pool liquidity operation records
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceBSwapOperation>>> GetLiquidityPoolOperationRecordsAsync(long? operationId = null, int? poolId = null, BSwapOperation? operation = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceBSwapOperation>>> GetLiquidityPoolOperationRecordsAsync(
+            long? operationId = null, int? poolId = null, BSwapOperation? operation = null, DateTime? startTime = null,
+            DateTime? endTime = null, int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
         {
             limit?.ValidateIntBetween(nameof(limit), 1, 100);
 
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("operationId", operationId?.ToString(CultureInfo.InvariantCulture));
             parameters.AddOptionalParameter("poolId", poolId);
-            parameters.AddOptionalParameter("operation", operation.HasValue ? JsonConvert.SerializeObject(new BSwapOperationConverter(false)) : null);
+            parameters.AddOptionalParameter("operation",
+                operation.HasValue ? JsonConvert.SerializeObject(new BSwapOperationConverter(false)) : null);
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceBSwapOperation>>(_baseClient.GetUrl(bSwapLiquidityOperationsEndpoint, bSwapApi, bSwapVersion), HttpMethod.Get, ct, parameters, true, weight: 3000).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceBSwapOperation>>(
+                    _baseClient.GetUrl(bSwapLiquidityOperationsEndpoint, bSwapApi, bSwapVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 3000).ConfigureAwait(false);
         }
 
         #endregion
@@ -906,56 +1218,76 @@ namespace Binance.Net.Clients.SpotApi
         #region Request liquid pool swap quote
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceBSwapQuote>> GetLiquidityPoolSwapQuoteAsync(string quoteAsset, string baseAsset, decimal quoteQuantity, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceBSwapQuote>> GetLiquidityPoolSwapQuoteAsync(string quoteAsset,
+            string baseAsset, decimal quoteQuantity, int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                {"quoteAsset", quoteAsset},
-                {"baseAsset", baseAsset},
-                {"quoteQty", quoteQuantity.ToString(CultureInfo.InvariantCulture)}
+                { "quoteAsset", quoteAsset },
+                { "baseAsset", baseAsset },
+                { "quoteQty", quoteQuantity.ToString(CultureInfo.InvariantCulture) }
             };
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceBSwapQuote>(_baseClient.GetUrl(bSwapQuoteEndpoint, bSwapApi, bSwapVersion), HttpMethod.Get, ct, parameters, true, weight: 150).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceBSwapQuote>(_baseClient.GetUrl(bSwapQuoteEndpoint, bSwapApi, bSwapVersion),
+                    HttpMethod.Get, ct, parameters, true, weight: 150).ConfigureAwait(false);
         }
 
         #endregion
 
-        #region Liquid pool swap 
+        #region Liquid pool swap
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceBSwapResult>> LiquidityPoolSwapAsync(string quoteAsset, string baseAsset, decimal quoteQuantity, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceBSwapResult>> LiquidityPoolSwapAsync(string quoteAsset, string baseAsset,
+            decimal quoteQuantity, int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                {"quoteAsset", quoteAsset},
-                {"baseAsset", baseAsset},
-                {"quoteQty",quoteQuantity.ToString(CultureInfo.InvariantCulture)}
+                { "quoteAsset", quoteAsset },
+                { "baseAsset", baseAsset },
+                { "quoteQty", quoteQuantity.ToString(CultureInfo.InvariantCulture) }
             };
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceBSwapResult>(_baseClient.GetUrl(bSwapSwapEndpoint, bSwapApi, bSwapVersion), HttpMethod.Post, ct, parameters, true, weight: 1000).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceBSwapResult>(_baseClient.GetUrl(bSwapSwapEndpoint, bSwapApi, bSwapVersion),
+                    HttpMethod.Post, ct, parameters, true, weight: 1000).ConfigureAwait(false);
         }
 
         #endregion
 
         #region Get liquid pool swap history
+
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceBSwapRecord>>> GetLiquidityPoolSwapHistoryAsync(long? swapId = null, BSwapStatus? status = null, string? quoteAsset = null, string? baseAsset = null, DateTime? startTime = null, DateTime? endTime = null, int? limit = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceBSwapRecord>>> GetLiquidityPoolSwapHistoryAsync(
+            long? swapId = null, BSwapStatus? status = null, string? quoteAsset = null, string? baseAsset = null,
+            DateTime? startTime = null, DateTime? endTime = null, int? limit = null, int? receiveWindow = null,
+            CancellationToken ct = default)
         {
             limit?.ValidateIntBetween(nameof(limit), 1, 100);
 
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("swapId", swapId?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("status", status.HasValue ? JsonConvert.SerializeObject(status.Value, new BSwapStatusConverter(false)) : null);
+            parameters.AddOptionalParameter("status",
+                status.HasValue ? JsonConvert.SerializeObject(status.Value, new BSwapStatusConverter(false)) : null);
             parameters.AddOptionalParameter("baseAsset", baseAsset);
             parameters.AddOptionalParameter("quoteAsset", quoteAsset);
             parameters.AddOptionalParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
             parameters.AddOptionalParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
             parameters.AddOptionalParameter("limit", limit?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceBSwapRecord>>(_baseClient.GetUrl(bSwapSwapRecordsEndpoint, bSwapApi, bSwapVersion), HttpMethod.Get, ct, parameters, true, weight: 3000).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceBSwapRecord>>(
+                    _baseClient.GetUrl(bSwapSwapRecordsEndpoint, bSwapApi, bSwapVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 3000).ConfigureAwait(false);
         }
 
         #endregion
@@ -963,18 +1295,25 @@ namespace Binance.Net.Clients.SpotApi
         #region Add liquidity pool preview
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceBSwapPreviewResult>> AddToLiquidityPoolPreviewAsync(int poolId, string asset, decimal quantity, LiquidityType type, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceBSwapPreviewResult>> AddToLiquidityPoolPreviewAsync(int poolId,
+            string asset, decimal quantity, LiquidityType type, int? receiveWindow = null,
+            CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                {"poolId", poolId},
-                {"quoteAsset", asset},
-                {"type", JsonConvert.SerializeObject(type, new LiquidityTypeConverter(false))},
-                {"quoteQty", quantity.ToString(CultureInfo.InvariantCulture)},
+                { "poolId", poolId },
+                { "quoteAsset", asset },
+                { "type", JsonConvert.SerializeObject(type, new LiquidityTypeConverter(false)) },
+                { "quoteQty", quantity.ToString(CultureInfo.InvariantCulture) }
             };
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceBSwapPreviewResult>(_baseClient.GetUrl(bSwapAddLiquidityPreviewEndpoint, bSwapApi, bSwapVersion), HttpMethod.Get, ct, parameters, true, weight: 150).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceBSwapPreviewResult>(
+                    _baseClient.GetUrl(bSwapAddLiquidityPreviewEndpoint, bSwapApi, bSwapVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 150).ConfigureAwait(false);
         }
 
         #endregion
@@ -982,18 +1321,25 @@ namespace Binance.Net.Clients.SpotApi
         #region Remove liquidity pool preview
 
         /// <inheritdoc />
-        public async Task<WebCallResult<BinanceBSwapPreviewResult>> RemoveFromLiquidityPoolPreviewAsync(int poolId, string asset, decimal quantity, LiquidityType type, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<BinanceBSwapPreviewResult>> RemoveFromLiquidityPoolPreviewAsync(int poolId,
+            string asset, decimal quantity, LiquidityType type, int? receiveWindow = null,
+            CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
-                {"poolId", poolId},
-                {"quoteAsset", asset},
-                {"type", JsonConvert.SerializeObject(type, new LiquidityTypeConverter(false))},
-                {"shareAmount", quantity.ToString(CultureInfo.InvariantCulture)}
+                { "poolId", poolId },
+                { "quoteAsset", asset },
+                { "type", JsonConvert.SerializeObject(type, new LiquidityTypeConverter(false)) },
+                { "shareAmount", quantity.ToString(CultureInfo.InvariantCulture) }
             };
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<BinanceBSwapPreviewResult>(_baseClient.GetUrl(bSwapRemoveLiquidityPreviewEndpoint, bSwapApi, bSwapVersion), HttpMethod.Get, ct, parameters, true, weight: 150).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<BinanceBSwapPreviewResult>(
+                    _baseClient.GetUrl(bSwapRemoveLiquidityPreviewEndpoint, bSwapApi, bSwapVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: 150).ConfigureAwait(false);
         }
 
         #endregion
@@ -1001,80 +1347,22 @@ namespace Binance.Net.Clients.SpotApi
         #region Get info
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceBSwapPoolLiquidity>>> GetLiquidityPoolInfoAsync(int? poolId = null, int? receiveWindow = null, CancellationToken ct = default)
+        public async Task<WebCallResult<IEnumerable<BinanceBSwapPoolLiquidity>>> GetLiquidityPoolInfoAsync(
+            int? poolId = null, int? receiveWindow = null, CancellationToken ct = default)
         {
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("poolId", poolId?.ToString(CultureInfo.InvariantCulture));
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            parameters.AddOptionalParameter("recvWindow",
+                receiveWindow?.ToString(CultureInfo.InvariantCulture) ??
+                _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
 
-            return await _baseClient.SendRequestInternal<IEnumerable<BinanceBSwapPoolLiquidity>>(_baseClient.GetUrl(bSwapPoolLiquidityEndpoint, bSwapApi, bSwapVersion), HttpMethod.Get, ct, parameters, true, weight: poolId == null ? 10 : 1).ConfigureAwait(false);
+            return await _baseClient
+                .SendRequestInternal<IEnumerable<BinanceBSwapPoolLiquidity>>(
+                    _baseClient.GetUrl(bSwapPoolLiquidityEndpoint, bSwapApi, bSwapVersion), HttpMethod.Get, ct,
+                    parameters, true, weight: poolId == null ? 10 : 1).ConfigureAwait(false);
         }
 
         #endregion
-
-        #endregion
-
-        #region C2C
-
-        /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinanceC2CUserTrade>>> GetC2CTradeHistoryAsync(OrderSide side, DateTime? startTime = null, DateTime? endTime = null, int? page = null, int? pageSize = null, long? receiveWindow = null, CancellationToken ct = default)
-        {
-            var parameters = new Dictionary<string, object>();
-            parameters.AddOptionalParameter("tradeType", JsonConvert.SerializeObject(side, new OrderSideConverter(false)));
-            parameters.AddOptionalParameter("startTimestamp", DateTimeConverter.ConvertToMilliseconds(startTime));
-            parameters.AddOptionalParameter("endTimestamp", DateTimeConverter.ConvertToMilliseconds(endTime));
-            parameters.AddOptionalParameter("page", page);
-            parameters.AddOptionalParameter("rows", pageSize);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-
-            var result = await _baseClient.SendRequestInternal<BinanceResult<IEnumerable<BinanceC2CUserTrade>>>(_baseClient.GetUrl(c2cTradeHistoryEndpoint, marginApi, marginVersion), HttpMethod.Get, ct, parameters, true).ConfigureAwait(false);
-            if (!result.Success)
-                return result.As<IEnumerable<BinanceC2CUserTrade>>(default);
-
-            if (result.Data?.Code != 0)
-                return result.AsError<IEnumerable<BinanceC2CUserTrade>>(new ServerError(result.Data!.Code, result.Data!.Message));
-
-            return result.As(result.Data.Data);
-        }
-
-        #endregion
-
-        #region Pay
-
-        /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<BinancePayTrade>>> GetPayTradeHistoryAsync(DateTime? startTime = null, DateTime? endTime = null, int? limit = null, long? receiveWindow = null, CancellationToken ct = default)
-        {
-            var parameters = new Dictionary<string, object>();
-            parameters.AddOptionalParameter("startTimestamp", DateTimeConverter.ConvertToMilliseconds(startTime));
-            parameters.AddOptionalParameter("endTimestamp", DateTimeConverter.ConvertToMilliseconds(endTime));
-            parameters.AddOptionalParameter("limit", limit);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-
-            var result = await _baseClient.SendRequestInternal<BinanceResult<IEnumerable<BinancePayTrade>>>(_baseClient.GetUrl(payTradeHistoryEndpoint, marginApi, marginVersion), HttpMethod.Get, ct, parameters, true, weight: 3000).ConfigureAwait(false);
-            if (!result.Success)
-                return result.As<IEnumerable<BinancePayTrade>>(default);
-
-            if (result.Data?.Code != 0)
-                return result.AsError<IEnumerable<BinancePayTrade>>(new ServerError(result.Data!.Code, result.Data!.Message));
-
-            return result.As(result.Data.Data);
-        }
-
-        #endregion
-
-        #region Convert
-
-        /// <inheritdoc />
-        public async Task<WebCallResult<BinanceListResult<BinanceConvertTrade>>> GetConvertTradeHistoryAsync(DateTime startTime, DateTime endTime, int? limit = null, long? receiveWindow = null, CancellationToken ct = default)
-        {
-            var parameters = new Dictionary<string, object>();
-            parameters.AddParameter("startTime", DateTimeConverter.ConvertToMilliseconds(startTime));
-            parameters.AddParameter("endTime", DateTimeConverter.ConvertToMilliseconds(endTime));
-            parameters.AddOptionalParameter("limit", limit);
-            parameters.AddOptionalParameter("recvWindow", receiveWindow?.ToString(CultureInfo.InvariantCulture) ?? _baseClient.Options.ReceiveWindow.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-
-            return await _baseClient.SendRequestInternal<BinanceListResult<BinanceConvertTrade>>(_baseClient.GetUrl(convertTradeHistoryEndpoint, marginApi, marginVersion), HttpMethod.Get, ct, parameters, true, weight: 3000).ConfigureAwait(false);
-        }
 
         #endregion
     }

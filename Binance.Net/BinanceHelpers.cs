@@ -1,72 +1,88 @@
-﻿using Binance.Net.Clients;
-using Binance.Net.Interfaces.Clients;
-using Binance.Net.Objects;
-using Microsoft.Extensions.DependencyInjection;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Binance.Net.Clients;
+using Binance.Net.Interfaces.Clients;
+using Binance.Net.Objects;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Binance.Net
 {
     /// <summary>
-    /// Helper methods for the Binance API
+    ///     Helper methods for the Binance API
     /// </summary>
     public static class BinanceHelpers
     {
         /// <summary>
-        /// Get the used weight from the response headers
+        ///     Get the used weight from the response headers
         /// </summary>
         /// <param name="headers"></param>
         /// <returns></returns>
         public static int? UsedWeight(this IEnumerable<KeyValuePair<string, IEnumerable<string>>>? headers)
         {
             if (headers == null)
+            {
                 return null;
+            }
 
-            var headerValues = headers.SingleOrDefault(s => s.Key.StartsWith("X-MBX-USED-WEIGHT-", StringComparison.InvariantCultureIgnoreCase)).Value;
-            if (headerValues != null && int.TryParse(headerValues.First(), out var value))
+            IEnumerable<string>? headerValues = headers.SingleOrDefault(s =>
+                s.Key.StartsWith("X-MBX-USED-WEIGHT-", StringComparison.InvariantCultureIgnoreCase)).Value;
+            if (headerValues != null && int.TryParse(headerValues.First(), out int value))
+            {
                 return value;
+            }
+
             return null;
         }
 
         /// <summary>
-        /// Get the used weight from the response headers
+        ///     Get the used weight from the response headers
         /// </summary>
         /// <param name="headers"></param>
         /// <returns></returns>
         public static int? UsedOrderCount(this IEnumerable<KeyValuePair<string, IEnumerable<string>>>? headers)
         {
             if (headers == null)
+            {
                 return null;
+            }
 
-            var headerValues = headers.SingleOrDefault(s => s.Key.StartsWith("X-MBX-ORDER-COUNT-", StringComparison.InvariantCultureIgnoreCase)).Value;
-            if (headerValues != null && int.TryParse(headerValues.First(), out var value))
+            IEnumerable<string>? headerValues = headers.SingleOrDefault(s =>
+                s.Key.StartsWith("X-MBX-ORDER-COUNT-", StringComparison.InvariantCultureIgnoreCase)).Value;
+            if (headerValues != null && int.TryParse(headerValues.First(), out int value))
+            {
                 return value;
+            }
+
             return null;
         }
 
         /// <summary>
-        /// Clamp a quantity between a min and max quantity and floor to the closest step
+        ///     Clamp a quantity between a min and max quantity and floor to the closest step
         /// </summary>
         /// <param name="minQuantity"></param>
         /// <param name="maxQuantity"></param>
         /// <param name="stepSize"></param>
         /// <param name="quantity"></param>
         /// <returns></returns>
-        public static decimal ClampQuantity(decimal minQuantity, decimal maxQuantity, decimal stepSize, decimal quantity)
+        public static decimal ClampQuantity(decimal minQuantity, decimal maxQuantity, decimal stepSize,
+            decimal quantity)
         {
             quantity = Math.Min(maxQuantity, quantity);
             quantity = Math.Max(minQuantity, quantity);
             if (stepSize == 0)
+            {
                 return quantity;
+            }
+
             quantity -= quantity % stepSize;
             quantity = Floor(quantity);
             return quantity;
         }
 
         /// <summary>
-        /// Clamp a price between a min and max price
+        ///     Clamp a price between a min and max price
         /// </summary>
         /// <param name="minPrice"></param>
         /// <param name="maxPrice"></param>
@@ -80,7 +96,7 @@ namespace Binance.Net
         }
 
         /// <summary>
-        /// Floor a price to the closest tick
+        ///     Floor a price to the closest tick
         /// </summary>
         /// <param name="tickSize"></param>
         /// <param name="price"></param>
@@ -93,7 +109,7 @@ namespace Binance.Net
         }
 
         /// <summary>
-        /// Floor
+        ///     Floor
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
@@ -103,21 +119,24 @@ namespace Binance.Net
         }
 
         /// <summary>
-        /// Add the IBinanceClient and IBinanceSocketClient to the sevice collection so they can be injected
+        ///     Add the IBinanceClient and IBinanceSocketClient to the sevice collection so they can be injected
         /// </summary>
         /// <param name="services">The service collection</param>
         /// <param name="defaultOptionsCallback">Set default options for the client</param>
-        /// <param name="socketClientLifeTime">The lifetime of the IBinanceSocketClient for the service collection. Defaults to Scoped.</param>
+        /// <param name="socketClientLifeTime">
+        ///     The lifetime of the IBinanceSocketClient for the service collection. Defaults to
+        ///     Scoped.
+        /// </param>
         /// <returns></returns>
         public static IServiceCollection AddBinance(
-            this IServiceCollection services, 
+            this IServiceCollection services,
             Action<BinanceClientOptions, BinanceSocketClientOptions>? defaultOptionsCallback = null,
             ServiceLifetime? socketClientLifeTime = null)
         {
             if (defaultOptionsCallback != null)
             {
-                var options = new BinanceClientOptions();
-                var socketOptions = new BinanceSocketClientOptions();
+                BinanceClientOptions options = new BinanceClientOptions();
+                BinanceSocketClientOptions socketOptions = new BinanceSocketClientOptions();
                 defaultOptionsCallback?.Invoke(options, socketOptions);
 
                 BinanceClient.SetDefaultOptions(options);
@@ -126,23 +145,34 @@ namespace Binance.Net
 
             services.AddTransient<IBinanceClient, BinanceClient>();
             if (socketClientLifeTime == null)
+            {
                 services.AddScoped<IBinanceSocketClient, BinanceSocketClient>();
+            }
             else
-                services.Add(new ServiceDescriptor(typeof(IBinanceSocketClient), typeof(BinanceSocketClient), socketClientLifeTime.Value));
+            {
+                services.Add(new ServiceDescriptor(typeof(IBinanceSocketClient), typeof(BinanceSocketClient),
+                    socketClientLifeTime.Value));
+            }
+
             return services;
         }
 
         /// <summary>
-        /// Validate the string is a valid Binance symbol.
+        ///     Validate the string is a valid Binance symbol.
         /// </summary>
         /// <param name="symbolString">string to validate</param>
         public static void ValidateBinanceSymbol(this string symbolString)
         {
             if (string.IsNullOrEmpty(symbolString))
+            {
                 throw new ArgumentException("Symbol is not provided");
+            }
 
-            if(!Regex.IsMatch(symbolString, "^([A-Z|a-z|0-9]{5,})$"))
-                throw new ArgumentException($"{symbolString} is not a valid Binance symbol. Should be [BaseAsset][QuoteAsset], e.g. BTCUSDT");
+            if (!Regex.IsMatch(symbolString, "^([A-Z|a-z|0-9]{5,})$"))
+            {
+                throw new ArgumentException(
+                    $"{symbolString} is not a valid Binance symbol. Should be [BaseAsset][QuoteAsset], e.g. BTCUSDT");
+            }
         }
     }
 }
